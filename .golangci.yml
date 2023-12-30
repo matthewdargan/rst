@@ -1,0 +1,19 @@
+output:
+  sort-results: true
+
+linters:
+  enable:
+    - gofumpt
+    - nolintlint
+    - revive
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
