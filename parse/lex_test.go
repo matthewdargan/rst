@@ -80,6 +80,124 @@ Paragraph.
 			mkItem(itemSpace, "   "), mkItem(itemText, "explicit markup start."), tEOF,
 		},
 	},
+	{
+		"2 line comments",
+		`.. A comment.
+.. Another.
+
+Paragraph.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment."),
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Another."),
+			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"line comment, no blank line",
+		`.. A comment
+no blank line
+
+Paragraph.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment"), mkItem(itemText, "no blank line"),
+			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"2 line comments, no blank line",
+		`.. A comment.
+.. Another.
+no blank line
+
+Paragraph.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment."),
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Another."), mkItem(itemText, "no blank line"),
+			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"line comment with directive",
+		`.. A comment::
+
+Paragraph.
+`,
+		[]item{tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment::"), tNewLine, mkItem(itemText, "Paragraph."), tEOF},
+	},
+	{
+		"comment block with directive",
+		`..
+   comment::
+
+The extra newline before the comment text prevents
+the parser from recognizing a directive.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "comment::"), tNewLine,
+			mkItem(itemText, "The extra newline before the comment text prevents"),
+			mkItem(itemText, "the parser from recognizing a directive."), tEOF,
+		},
+	},
+	{
+		"comment block with hyperlink target",
+		`..
+   _comment: http://example.org
+
+The extra newline before the comment text prevents
+the parser from recognizing a hyperlink target.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "_comment: http://example.org"), tNewLine,
+			mkItem(itemText, "The extra newline before the comment text prevents"),
+			mkItem(itemText, "the parser from recognizing a hyperlink target."), tEOF,
+		},
+	},
+	{
+		"comment block with citation",
+		`..
+   [comment] Not a citation.
+
+The extra newline before the comment text prevents
+the parser from recognizing a citation.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "[comment] Not a citation."), tNewLine,
+			mkItem(itemText, "The extra newline before the comment text prevents"),
+			mkItem(itemText, "the parser from recognizing a citation."), tEOF,
+		},
+	},
+	{
+		"comment block with substitution definition",
+		`..
+   |comment| image:: bogus.png
+
+The extra newline before the comment text prevents
+the parser from recognizing a substitution definition.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "|comment| image:: bogus.png"), tNewLine,
+			mkItem(itemText, "The extra newline before the comment text prevents"),
+			mkItem(itemText, "the parser from recognizing a substitution definition."), tEOF,
+		},
+	},
+	{
+		"comment block and empty comment",
+		`.. Next is an empty comment, which serves to end this comment and
+   prevents the following block quote being swallowed up.
+
+..
+
+    A block quote.
+`,
+		[]item{
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Next is an empty comment, which serves to end this comment and"),
+			mkItem(itemSpace, "   "), mkItem(itemText, "prevents the following block quote being swallowed up."),
+			tNewLine, tComment, tNewLine, mkItem(itemSpace, "    "), mkItem(itemText, "A block quote."), tEOF,
+		},
+	},
 }
 
 // collect gathers the emitted items into a slice.
