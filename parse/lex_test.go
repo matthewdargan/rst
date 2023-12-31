@@ -195,7 +195,86 @@ the parser from recognizing a substitution definition.
 		[]item{
 			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Next is an empty comment, which serves to end this comment and"),
 			mkItem(itemSpace, "   "), mkItem(itemText, "prevents the following block quote being swallowed up."),
-			tNewLine, tComment, tNewLine, mkItem(itemSpace, "    "), mkItem(itemText, "A block quote."), tEOF,
+			tNewLine, tComment, tNewLine, mkItem(itemSpace, "    "),
+			mkItem(itemText, "A block quote."), // TODO: Should be itemBlockQuote once implemented
+			tEOF,
+		},
+	},
+	{
+		"comment in definition lists",
+		`term 1
+  definition 1
+
+  .. a comment
+
+term 2
+  definition 2
+`,
+		[]item{
+			mkItem(itemText, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
+			mkItem(itemSpace, "  "), mkItem(itemText, "definition 1"), tNewLine,
+			mkItem(itemSpace, "  "), tComment, mkItem(itemSpace, " "), mkItem(itemText, "a comment"), tNewLine,
+			mkItem(itemText, "term 2"), mkItem(itemSpace, "  "), mkItem(itemText, "definition 2"), tEOF,
+		},
+	},
+	{
+		"comment after definition lists",
+		`term 1
+  definition 1
+
+.. a comment
+
+term 2
+  definition 2
+`,
+		[]item{
+			mkItem(itemText, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
+			mkItem(itemSpace, "  "), mkItem(itemText, "definition 1"), tNewLine,
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "a comment"), tNewLine,
+			mkItem(itemText, "term 2"), mkItem(itemSpace, "  "), mkItem(itemText, "definition 2"), tEOF,
+		},
+	},
+	{
+		"comment between bullet paragraphs 2 and 3",
+		`+ bullet paragraph 1
+
+  bullet paragraph 2
+
+  .. comment between bullet paragraphs 2 and 3
+
+  bullet paragraph 3
+`,
+		[]item{
+			mkItem(itemText, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
+			tNewLine, mkItem(itemSpace, "  "), mkItem(itemText, "bullet paragraph 2"), tNewLine,
+			mkItem(itemSpace, "  "), tComment, mkItem(itemSpace, " "), mkItem(itemText, "comment between bullet paragraphs 2 and 3"),
+			tNewLine, mkItem(itemSpace, "  "), mkItem(itemText, "bullet paragraph 3"), tEOF,
+		},
+	},
+	{
+		"comment between bullet paragraphs 1 and 2",
+		`+ bullet paragraph 1
+
+  .. comment between bullet paragraphs 1 (leader) and 2
+
+  bullet paragraph 2
+`,
+		[]item{
+			mkItem(itemText, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
+			tNewLine, mkItem(itemSpace, "  "),
+			tComment, mkItem(itemSpace, " "), mkItem(itemText, "comment between bullet paragraphs 1 (leader) and 2"),
+			tNewLine, mkItem(itemSpace, "  "), mkItem(itemText, "bullet paragraph 2"), tEOF,
+		},
+	},
+	{
+		"comment trailing bullet paragraph",
+		`+ bullet
+
+  .. trailing comment
+`,
+		[]item{
+			mkItem(itemText, "+ bullet"), // TODO: Should be itemBullet once implemented
+			tNewLine, mkItem(itemSpace, "  "), tComment, mkItem(itemSpace, " "), mkItem(itemText, "trailing comment"), tEOF,
 		},
 	},
 }
