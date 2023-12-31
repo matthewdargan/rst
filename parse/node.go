@@ -1,4 +1,6 @@
-// Parse nodes.
+// Copyright 2023 Matthew P. Dargan. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
 package parse
 
