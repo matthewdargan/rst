@@ -7,12 +7,16 @@ import (
 
 // Make the types prettyprint.
 var itemName = map[itemType]string{
-	itemError:   "error",
-	itemComment: "comment",
-	itemEOF:     "EOF",
-	itemNewLine: "newline",
-	itemSpace:   "space",
-	itemText:    "text",
+	itemError:           "error",
+	itemComment:         "comment",
+	itemEOF:             "EOF",
+	itemHyperlinkName:   "hyperlink name",
+	itemHyperlinkPrefix: "hyperlink prefix",
+	itemHyperlinkStart:  "hyperlink start",
+	itemHyperlinkSuffix: "hyperlink suffix",
+	itemNewLine:         "newline",
+	itemSpace:           "space",
+	itemText:            "text",
 }
 
 func (i itemType) String() string {
@@ -37,9 +41,13 @@ func mkItem(typ itemType, text string) item {
 }
 
 var (
-	tComment = mkItem(itemComment, "..")
-	tEOF     = mkItem(itemEOF, "")
-	tNewLine = mkItem(itemNewLine, "\n")
+	tComment        = mkItem(itemComment, "..")
+	tEOF            = mkItem(itemEOF, "")
+	tHyperlinkStart = mkItem(itemHyperlinkStart, "..")
+	tNewLine        = mkItem(itemNewLine, "\n")
+	tSpace          = mkItem(itemSpace, " ")
+	tIndent2        = mkItem(itemSpace, "  ")
+	tIndent3        = mkItem(itemSpace, "   ")
 )
 
 var lexTests = []lexTest{
@@ -53,7 +61,7 @@ var lexTests = []lexTest{
 
 Paragraph.
 `,
-		[]item{tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment"), tNewLine, mkItem(itemText, "Paragraph."), tEOF},
+		[]item{tComment, tSpace, mkItem(itemText, "A comment"), tNewLine, mkItem(itemText, "Paragraph."), tEOF},
 	},
 	{
 		"comment block",
@@ -63,7 +71,7 @@ Paragraph.
 Paragraph.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment"), mkItem(itemSpace, "   "), mkItem(itemText, "block."),
+			tComment, tSpace, mkItem(itemText, "A comment"), tIndent3, mkItem(itemText, "block."),
 			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
 		},
 	},
@@ -75,9 +83,9 @@ Paragraph.
    explicit markup start.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "A comment consisting of multiple lines"),
-			mkItem(itemSpace, "   "), mkItem(itemText, "starting on the line after the"),
-			mkItem(itemSpace, "   "), mkItem(itemText, "explicit markup start."), tEOF,
+			tComment, tIndent3, mkItem(itemText, "A comment consisting of multiple lines"),
+			tIndent3, mkItem(itemText, "starting on the line after the"),
+			tIndent3, mkItem(itemText, "explicit markup start."), tEOF,
 		},
 	},
 	{
@@ -88,8 +96,8 @@ Paragraph.
 Paragraph.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment."),
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Another."),
+			tComment, tSpace, mkItem(itemText, "A comment."),
+			tComment, tSpace, mkItem(itemText, "Another."),
 			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
 		},
 	},
@@ -101,7 +109,7 @@ no blank line
 Paragraph.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment"), mkItem(itemText, "no blank line"),
+			tComment, tSpace, mkItem(itemText, "A comment"), mkItem(itemText, "no blank line"),
 			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
 		},
 	},
@@ -114,8 +122,8 @@ no blank line
 Paragraph.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment."),
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Another."), mkItem(itemText, "no blank line"),
+			tComment, tSpace, mkItem(itemText, "A comment."),
+			tComment, tSpace, mkItem(itemText, "Another."), mkItem(itemText, "no blank line"),
 			tNewLine, mkItem(itemText, "Paragraph."), tEOF,
 		},
 	},
@@ -125,7 +133,7 @@ Paragraph.
 
 Paragraph.
 `,
-		[]item{tComment, mkItem(itemSpace, " "), mkItem(itemText, "A comment::"), tNewLine, mkItem(itemText, "Paragraph."), tEOF},
+		[]item{tComment, tSpace, mkItem(itemText, "A comment::"), tNewLine, mkItem(itemText, "Paragraph."), tEOF},
 	},
 	{
 		"comment block with directive",
@@ -136,7 +144,7 @@ The extra newline before the comment text prevents
 the parser from recognizing a directive.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "comment::"), tNewLine,
+			tComment, tIndent3, mkItem(itemText, "comment::"), tNewLine,
 			mkItem(itemText, "The extra newline before the comment text prevents"),
 			mkItem(itemText, "the parser from recognizing a directive."), tEOF,
 		},
@@ -150,7 +158,7 @@ The extra newline before the comment text prevents
 the parser from recognizing a hyperlink target.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "_comment: http://example.org"), tNewLine,
+			tComment, tIndent3, mkItem(itemText, "_comment: http://example.org"), tNewLine,
 			mkItem(itemText, "The extra newline before the comment text prevents"),
 			mkItem(itemText, "the parser from recognizing a hyperlink target."), tEOF,
 		},
@@ -164,7 +172,7 @@ The extra newline before the comment text prevents
 the parser from recognizing a citation.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "[comment] Not a citation."), tNewLine,
+			tComment, tIndent3, mkItem(itemText, "[comment] Not a citation."), tNewLine,
 			mkItem(itemText, "The extra newline before the comment text prevents"),
 			mkItem(itemText, "the parser from recognizing a citation."), tEOF,
 		},
@@ -178,7 +186,7 @@ The extra newline before the comment text prevents
 the parser from recognizing a substitution definition.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, "   "), mkItem(itemText, "|comment| image:: bogus.png"), tNewLine,
+			tComment, tIndent3, mkItem(itemText, "|comment| image:: bogus.png"), tNewLine,
 			mkItem(itemText, "The extra newline before the comment text prevents"),
 			mkItem(itemText, "the parser from recognizing a substitution definition."), tEOF,
 		},
@@ -193,8 +201,8 @@ the parser from recognizing a substitution definition.
     A block quote.
 `,
 		[]item{
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "Next is an empty comment, which serves to end this comment and"),
-			mkItem(itemSpace, "   "), mkItem(itemText, "prevents the following block quote being swallowed up."),
+			tComment, tSpace, mkItem(itemText, "Next is an empty comment, which serves to end this comment and"),
+			tIndent3, mkItem(itemText, "prevents the following block quote being swallowed up."),
 			tNewLine, tComment, tNewLine, mkItem(itemSpace, "    "),
 			mkItem(itemText, "A block quote."), // TODO: Should be itemBlockQuote once implemented
 			tEOF,
@@ -212,9 +220,9 @@ term 2
 `,
 		[]item{
 			mkItem(itemText, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
-			mkItem(itemSpace, "  "), mkItem(itemText, "definition 1"), tNewLine,
-			mkItem(itemSpace, "  "), tComment, mkItem(itemSpace, " "), mkItem(itemText, "a comment"), tNewLine,
-			mkItem(itemText, "term 2"), mkItem(itemSpace, "  "), mkItem(itemText, "definition 2"), tEOF,
+			tIndent2, mkItem(itemText, "definition 1"), tNewLine,
+			tIndent2, tComment, tSpace, mkItem(itemText, "a comment"), tNewLine,
+			mkItem(itemText, "term 2"), tIndent2, mkItem(itemText, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -229,9 +237,9 @@ term 2
 `,
 		[]item{
 			mkItem(itemText, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
-			mkItem(itemSpace, "  "), mkItem(itemText, "definition 1"), tNewLine,
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "a comment"), tNewLine,
-			mkItem(itemText, "term 2"), mkItem(itemSpace, "  "), mkItem(itemText, "definition 2"), tEOF,
+			tIndent2, mkItem(itemText, "definition 1"), tNewLine,
+			tComment, tSpace, mkItem(itemText, "a comment"), tNewLine,
+			mkItem(itemText, "term 2"), tIndent2, mkItem(itemText, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -246,9 +254,9 @@ term 2
 `,
 		[]item{
 			mkItem(itemText, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
-			tNewLine, mkItem(itemSpace, "  "), mkItem(itemText, "bullet paragraph 2"), tNewLine,
-			mkItem(itemSpace, "  "), tComment, mkItem(itemSpace, " "), mkItem(itemText, "comment between bullet paragraphs 2 and 3"),
-			tNewLine, mkItem(itemSpace, "  "), mkItem(itemText, "bullet paragraph 3"), tEOF,
+			tNewLine, tIndent2, mkItem(itemText, "bullet paragraph 2"), tNewLine,
+			tIndent2, tComment, tSpace, mkItem(itemText, "comment between bullet paragraphs 2 and 3"),
+			tNewLine, tIndent2, mkItem(itemText, "bullet paragraph 3"), tEOF,
 		},
 	},
 	{
@@ -261,9 +269,9 @@ term 2
 `,
 		[]item{
 			mkItem(itemText, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
-			tNewLine, mkItem(itemSpace, "  "),
-			tComment, mkItem(itemSpace, " "), mkItem(itemText, "comment between bullet paragraphs 1 (leader) and 2"),
-			tNewLine, mkItem(itemSpace, "  "), mkItem(itemText, "bullet paragraph 2"), tEOF,
+			tNewLine, tIndent2,
+			tComment, tSpace, mkItem(itemText, "comment between bullet paragraphs 1 (leader) and 2"),
+			tNewLine, tIndent2, mkItem(itemText, "bullet paragraph 2"), tEOF,
 		},
 	},
 	{
@@ -274,7 +282,20 @@ term 2
 `,
 		[]item{
 			mkItem(itemText, "+ bullet"), // TODO: Should be itemBullet once implemented
-			tNewLine, mkItem(itemSpace, "  "), tComment, mkItem(itemSpace, " "), mkItem(itemText, "trailing comment"), tEOF,
+			tNewLine, tIndent2, tComment, tSpace, mkItem(itemText, "trailing comment"), tEOF,
+		},
+	},
+	// hyperlink targets
+	{
+		"hyperlink target",
+		`.. _target:
+
+(Internal hyperlink target.)
+`,
+		[]item{
+			tHyperlinkStart, tSpace, mkItem(itemHyperlinkPrefix, "_"),
+			mkItem(itemHyperlinkName, "target"), mkItem(itemHyperlinkSuffix, ":"),
+			tNewLine, mkItem(itemText, "(Internal hyperlink target.)"), tEOF,
 		},
 	},
 }
@@ -318,7 +339,7 @@ func TestLex(t *testing.T) {
 		items := collect(&test)
 		if !equal(items, test.items, false) {
 			t.Errorf("%s: got\n\t%+v\nexpected\n\t%v", test.name, items, test.items)
-			return // TODO
+			return
 		}
 		t.Log(test.name, "OK")
 	}

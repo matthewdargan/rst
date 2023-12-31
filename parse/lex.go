@@ -34,9 +34,13 @@ const (
 	itemError   itemType = iota // error occurred; value is text of error
 	itemComment                 // comment text
 	itemEOF
-	itemNewLine // newline separating constructs
-	itemSpace   // run of spaces separating arguments
-	itemText    // plain text
+	itemHyperlinkName   // hyperlink target name
+	itemHyperlinkPrefix // prefix before hyperlink target name
+	itemHyperlinkStart  // indicates the start of a hyperlink target
+	itemHyperlinkSuffix // suffix after hyperlink target name
+	itemNewLine         // newline separating constructs
+	itemSpace           // run of spaces separating arguments
+	itemText            // plain text
 )
 
 const eof = -1
@@ -46,14 +50,15 @@ type stateFn func(*lexer) stateFn
 
 // lexer holds the state of the scanner.
 type lexer struct {
-	name      string // the name of the input; used only for error reports
-	input     string // the string being scanned
-	pos       Pos    // current position in the input
-	start     Pos    // start position of this item
-	atEOF     bool   // we have hit the end of input and returned eof
-	line      int    // 1+number of newlines seen
-	startLine int    // start line of this item
-	item      item   // item to return to parser
+	name            string // the name of the input; used only for error reports
+	input           string // the string being scanned
+	pos             Pos    // current position in the input
+	start           Pos    // start position of this item
+	atEOF           bool   // we have hit the end of input and returned eof
+	line            int    // 1+number of newlines seen
+	startLine       int    // start line of this item
+	item            item   // item to return to parser
+	insideHyperlink bool   // are we inside a hyperlink target?
 }
 
 // next returns the next rune in the input.
@@ -168,7 +173,7 @@ func lex(name, input string) *lexer {
 	return l
 }
 
-// lexAction scans the elements inside action delimiters.
+// lexAction scans the elements inside actions.
 func lexAction(l *lexer) stateFn {
 	switch r := l.next(); {
 	case r == eof:
@@ -177,6 +182,14 @@ func lexAction(l *lexer) stateFn {
 		return l.emit(itemNewLine)
 	case unicode.IsSpace(r):
 		return lexSpace
+	case r == '.' && strings.HasPrefix(l.input[l.pos:], ". _"):
+		return lexHyperlinkStart
+	case r == '_' && l.insideHyperlink:
+		return l.emit(itemHyperlinkPrefix)
+	case r == ':' && l.insideHyperlink:
+		return lexHyperlinkSuffix
+	case l.insideHyperlink:
+		return lexHyperlinkName
 	case r == '.' && l.peek() == '.':
 		return lexComment
 	default:
@@ -185,8 +198,6 @@ func lexAction(l *lexer) stateFn {
 }
 
 // lexSpace scans a run of space characters.
-// We have not consumed the first space, which is known to be present.
-// Take care if there is a trim-marked right delimiter, which starts with a space.
 func lexSpace(l *lexer) stateFn {
 	var r rune
 	for {
@@ -197,6 +208,37 @@ func lexSpace(l *lexer) stateFn {
 		l.next()
 	}
 	return l.emit(itemSpace)
+}
+
+// lexHyperlinkStart scans a hyperlink start. The hyperlink start marker is known to be present.
+func lexHyperlinkStart(l *lexer) stateFn {
+	l.next()
+	l.insideHyperlink = true
+	return l.emit(itemHyperlinkStart)
+}
+
+// lexHyperlinkName scans a hyperlink name. The hyperlink target is known to be started.
+func lexHyperlinkName(l *lexer) stateFn {
+	var r rune
+	for {
+		r = l.peek()
+		if r == ':' {
+			break
+		}
+		l.next()
+	}
+	return l.emit(itemHyperlinkName)
+}
+
+// lexHyperlinkSuffix scans a hyperlink suffix. The hyperlink suffix marker is known to be present.
+func lexHyperlinkSuffix(l *lexer) stateFn {
+	l.insideHyperlink = false
+	i := l.thisItem(itemHyperlinkSuffix)
+	if r := l.peek(); r == '\n' {
+		l.pos++
+		l.ignore()
+	}
+	return l.emitItem(i)
 }
 
 // lexComment scans a comment. The comment marker is known to be present.
