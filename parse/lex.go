@@ -42,6 +42,7 @@ const (
 	itemHyperlinkPrefix // prefix before hyperlink target name
 	itemHyperlinkStart  // indicates the start of a hyperlink target
 	itemHyperlinkSuffix // suffix after hyperlink target name
+	itemHyperlinkURI    // URI a hyperlink target points to
 	itemNewLine         // newline separating constructs
 	itemSpace           // run of spaces separating arguments
 	itemText            // plain text
@@ -157,7 +158,7 @@ func (l *lexer) errorf(format string, args ...any) stateFn {
 // Called by the parser, not in the lexing goroutine.
 func (l *lexer) nextItem() item {
 	l.item = item{itemEOF, l.pos, "EOF", l.startLine}
-	state := lexAction
+	state := lexAny
 	for {
 		state = state(l)
 		if state == nil {
@@ -177,8 +178,8 @@ func lex(name, input string) *lexer {
 	return l
 }
 
-// lexAction scans the elements inside actions.
-func lexAction(l *lexer) stateFn {
+// lexAny scans any items.
+func lexAny(l *lexer) stateFn {
 	switch r := l.next(); {
 	case r == eof:
 		return l.emit(itemEOF)
@@ -203,12 +204,7 @@ func lexAction(l *lexer) stateFn {
 
 // lexSpace scans a run of space characters.
 func lexSpace(l *lexer) stateFn {
-	var r rune
-	for {
-		r = l.peek()
-		if !unicode.IsSpace(r) {
-			break
-		}
+	for unicode.IsSpace(l.peek()) {
 		l.next()
 	}
 	return l.emit(itemSpace)
@@ -223,12 +219,7 @@ func lexHyperlinkStart(l *lexer) stateFn {
 
 // lexHyperlinkName scans a hyperlink name. The hyperlink target is known to be started.
 func lexHyperlinkName(l *lexer) stateFn {
-	var r rune
-	for {
-		r = l.peek()
-		if r == ':' {
-			break
-		}
+	for l.peek() != ':' {
 		l.next()
 	}
 	return l.emit(itemHyperlinkName)

@@ -45,13 +45,15 @@ func mkItem(typ itemType, text string) item {
 }
 
 var (
-	tComment        = mkItem(itemComment, "..")
-	tEOF            = mkItem(itemEOF, "")
-	tHyperlinkStart = mkItem(itemHyperlinkStart, "..")
-	tNewLine        = mkItem(itemNewLine, "\n")
-	tSpace          = mkItem(itemSpace, " ")
-	tIndent2        = mkItem(itemSpace, "  ")
-	tIndent3        = mkItem(itemSpace, "   ")
+	tComment         = mkItem(itemComment, "..")
+	tEOF             = mkItem(itemEOF, "")
+	tHyperlinkStart  = mkItem(itemHyperlinkStart, "..")
+	tHyperlinkPrefix = mkItem(itemHyperlinkPrefix, "_")
+	tHyperlinkSuffix = mkItem(itemHyperlinkSuffix, ":")
+	tNewLine         = mkItem(itemNewLine, "\n")
+	tSpace           = mkItem(itemSpace, " ")
+	tIndent2         = mkItem(itemSpace, "  ")
+	tIndent3         = mkItem(itemSpace, "   ")
 )
 
 var lexTests = []lexTest{
@@ -297,9 +299,42 @@ term 2
 (Internal hyperlink target.)
 `,
 		[]item{
-			tHyperlinkStart, tSpace, mkItem(itemHyperlinkPrefix, "_"),
-			mkItem(itemHyperlinkName, "target"), mkItem(itemHyperlinkSuffix, ":"),
+			tHyperlinkStart, tSpace, tHyperlinkPrefix,
+			mkItem(itemHyperlinkName, "target"), tHyperlinkSuffix,
 			tNewLine, mkItem(itemText, "(Internal hyperlink target.)"), tEOF,
+		},
+	},
+	{
+		"hyperlink target with optional space before colon", ".. _optional space before colon :",
+		[]item{
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(itemHyperlinkName, "optional space before colon "),
+			tHyperlinkSuffix, tEOF,
+		},
+	},
+	{
+		"external hyperlink targets",
+		`External hyperlink targets:
+
+.. _one-liner: http://structuredtext.sourceforge.net
+
+.. _starts-on-this-line: http://
+                         structuredtext.
+                         sourceforge.net
+
+.. _entirely-below:
+   http://structuredtext.
+   sourceforge.net
+
+.. _escaped-whitespace: http://example.org/a\ path\ with\
+   spaces.html
+
+.. _not-indirect: uri\_
+`,
+		[]item{
+			mkItem(itemText, "External hyperlink targets:"), tNewLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(itemHyperlinkName, "one-liner"), tHyperlinkSuffix,
+			tSpace, // TODO: hyperlink URI
+			tEOF,
 		},
 	},
 }
