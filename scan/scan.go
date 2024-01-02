@@ -2,8 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:generate stringer -type Type
-
+// Package scan lexically analyzes reStructuredText.
 package scan
 
 import (
@@ -21,21 +20,23 @@ type Token struct {
 	Text string // The text of this item.
 }
 
+//go:generate stringer -type Type
+
 // Type identifies the type of lex items.
 type Type int
 
 const (
-	EOF             Type = iota
-	Error                // error occurred; value is text of error
-	BlankLine            // blank lines separate elements
-	Space                // run of spaces
-	Text                 // plain text
-	Comment              // comment marker
-	HyperlinkName        // hyperlink target name
-	HyperlinkPrefix      // prefix before hyperlink target name
-	HyperlinkStart       // indicates the start of a hyperlink target
-	HyperlinkSuffix      // suffix after hyperlink target name
-	HyperlinkURI         // URI a hyperlink target points to
+	EOF             Type = iota // EOF indicates an end-of-file character
+	Error                       // Error occurred; value is text of error
+	BlankLine                   // BlankLine separates elements
+	Space                       // Space indicates a run of whitespace
+	Text                        // Text indicates plaintext
+	Comment                     // Comment marker
+	HyperlinkName               // HyperlinkName indicates a hyperlink target name
+	HyperlinkPrefix             // HyperlinkPrefix prefixes a hyperlink target name
+	HyperlinkStart              // HyperlinkStart indicates the start of a hyperlink target
+	HyperlinkSuffix             // HyperlinkSuffix suffixes hyperlink target name
+	HyperlinkURI                // HyperlinkURI points to a hyperlink target
 )
 
 func (i Token) String() string {
@@ -57,18 +58,18 @@ type stateFn func(*Scanner) stateFn
 
 // Scanner holds the state of the scanner.
 type Scanner struct {
-	r         io.ByteReader
-	done      bool
-	name      string // the name of the input; used only for error reports
-	buf       []byte // I/O buffer, re-used.
-	input     string // the line of text being scanned.
-	lastRune  rune   // most recent return from next()
-	lastWidth int    // size of that rune
-	readOK    bool   // allow reading of a new line of input
-	line      int    // line number in input
-	pos       int    // current position in the input
-	start     int    // start position of this item
-	token     Token  // token to return to parser
+	r         io.ByteReader // reads input bytes
+	done      bool          // are we done scanning?
+	name      string        // the name of the input; used only for error reports
+	buf       []byte        // I/O buffer, re-used.
+	input     string        // the line of text being scanned.
+	lastRune  rune          // most recent return from next()
+	lastWidth int           // size of that rune
+	readOK    bool          // allow reading of a new line of input
+	line      int           // line number in input
+	pos       int           // current position in the input
+	start     int           // start position of this item
+	token     Token         // token to return to parser
 }
 
 // loadLine reads the next line of input and stores it in (appends it to) the input.
