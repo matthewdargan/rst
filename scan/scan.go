@@ -26,17 +26,20 @@ type Token struct {
 type Type int
 
 const (
-	EOF             Type = iota // EOF indicates an end-of-file character
-	Error                       // Error occurred; value is text of error
-	BlankLine                   // BlankLine separates elements
-	Space                       // Space indicates a run of whitespace
-	Text                        // Text indicates plaintext
-	Comment                     // Comment marker
-	HyperlinkName               // HyperlinkName indicates a hyperlink target name
-	HyperlinkPrefix             // HyperlinkPrefix prefixes a hyperlink target name
-	HyperlinkStart              // HyperlinkStart indicates the start of a hyperlink target
-	HyperlinkSuffix             // HyperlinkSuffix suffixes hyperlink target name
-	HyperlinkURI                // HyperlinkURI points to a hyperlink target
+	EOF                  Type = iota // EOF indicates an end-of-file character
+	Error                            // Error occurred; value is text of error
+	BlankLine                        // BlankLine separates elements
+	Space                            // Space indicates a run of whitespace
+	Text                             // Text indicates plaintext
+	Comment                          // Comment marker
+	HyperlinkStart                   // HyperlinkStart starts a hyperlink target
+	HyperlinkPrefix                  // HyperlinkPrefix prefixes a hyperlink target name
+	HyperlinkName                    // HyperlinkName indicates a hyperlink target name
+	HyperlinkSuffix                  // HyperlinkSuffix suffixes hyperlink target name
+	HyperlinkURI                     // HyperlinkURI points to a hyperlink target
+	InlineReferenceOpen              // InlineReferenceOpen opens an inline reference
+	InlineReferenceText              // InlineReferenceText indicates text referenced inline
+	InlineReferenceClose             // InlineReferenceClose closes an inline reference
 )
 
 func (i Token) String() string {
@@ -70,6 +73,7 @@ type Scanner struct {
 	pos       int           // current position in the input
 	start     int           // start position of this item
 	token     Token         // token to return to parser
+	types     [2]Type       // most recent scanned types
 }
 
 // loadLine reads the next line of input and stores it in (appends it to) the input.
@@ -128,30 +132,6 @@ func (l *Scanner) peek() rune {
 	return r
 }
 
-// peek2 returns the next two runes ahead, but does not consume anything.
-func (l *Scanner) peek2() (rune, rune) {
-	pos := l.pos
-	lastWidth := l.lastWidth
-	r1 := l.next()
-	r2 := l.next()
-	l.pos = pos
-	l.lastWidth = lastWidth
-	return r1, r2
-}
-
-// backup steps back one rune. Should only be called once per call of next.
-func (l *Scanner) backup() {
-	if l.lastRune == eof {
-		return
-	}
-	if l.pos == l.start {
-		l.errorf("internal error: backup at start of input")
-	}
-	if l.pos > l.start {
-		l.pos -= l.lastWidth
-	}
-}
-
 // emit passes an item back to the client.
 func (l *Scanner) emit(t Type) stateFn {
 	if t == BlankLine {
@@ -159,6 +139,8 @@ func (l *Scanner) emit(t Type) stateFn {
 	}
 	text := l.input[l.start:l.pos]
 	l.token = Token{t, l.line, text}
+	l.types[0] = l.types[1]
+	l.types[1] = t
 	l.start = l.pos
 	return nil
 }
@@ -169,22 +151,6 @@ func (l *Scanner) emit(t Type) stateFn {
 func (l *Scanner) ignore() {
 	l.line += strings.Count(l.input[l.start:l.pos], "\n")
 	l.start = l.pos
-}
-
-// accept consumes the next rune if it's from the valid set.
-func (l *Scanner) accept(valid string) bool {
-	if strings.ContainsRune(valid, l.next()) {
-		return true
-	}
-	l.backup()
-	return false
-}
-
-// acceptRun consumes a run of runes from the valid set.
-func (l *Scanner) acceptRun(valid string) {
-	for strings.ContainsRune(valid, l.next()) {
-	}
-	l.backup()
 }
 
 // errorf returns an error token and empties the input.
@@ -232,21 +198,23 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(BlankLine)
 	case unicode.IsSpace(r):
 		return lexSpace
-	case l.input[:l.pos] == hyperlinkMark:
-		return l.emit(HyperlinkPrefix)
-	case strings.LastIndex(l.input[:l.pos], hyperlinkMark) == 0:
-		if r == ':' {
-			return lexEndOfLine(l, HyperlinkSuffix)
-		}
-		return lexHyperlinkName
+	case strings.HasPrefix(l.input[l.start:], hyperlinkMark):
+		l.next()
+		return l.emit(HyperlinkStart)
 	case r == '.' && l.peek() == '.':
 		l.next()
-		if r1, r2 := l.peek2(); r1 == ' ' && r2 == '_' {
-			return l.emit(HyperlinkStart)
-		}
 		return lexEndOfLine(l, Comment)
+	case l.input[:l.pos] == hyperlinkMark:
+		return l.emit(HyperlinkPrefix)
+	case strings.HasSuffix(l.input[:l.start], hyperlinkMark):
+		return lexHyperlinkName
+	case r == ':' && l.types[1] == HyperlinkName:
+		return lexEndOfLine(l, HyperlinkSuffix)
+	// TODO: Handle indirect hyperlink InlineReferenceText (everything before _), InlineReferenceClose here (_). CANNOT BE \_ (this would be external)
+	case l.types[1] == Space && (l.types[0] == HyperlinkSuffix || l.types[0] == HyperlinkURI):
+		return lexUntilTerminator(l, HyperlinkURI)
 	default:
-		return lexText
+		return lexUntilTerminator(l, Text)
 	}
 }
 
@@ -256,23 +224,6 @@ func lexSpace(l *Scanner) stateFn {
 		l.next()
 	}
 	return l.emit(Space)
-}
-
-// lexText scans until a newline or EOF.
-func lexText(l *Scanner) stateFn {
-	for {
-		switch l.peek() {
-		case eof:
-			return l.emit(Text)
-		case '\n':
-			i := l.emit(Text)
-			l.pos++
-			l.ignore()
-			return i
-		default:
-			l.next()
-		}
-	}
 }
 
 // lexEndOfLine scans a lex item known to be present.
@@ -292,4 +243,21 @@ func lexHyperlinkName(l *Scanner) stateFn {
 		l.next()
 	}
 	return l.emit(HyperlinkName)
+}
+
+// lexUntilTerminator scans a lex item until a newline or EOF.
+func lexUntilTerminator(l *Scanner, typ Type) stateFn {
+	for {
+		switch l.peek() {
+		case eof:
+			return l.emit(typ)
+		case '\n':
+			i := l.emit(typ)
+			l.pos++
+			l.ignore()
+			return i
+		default:
+			l.next()
+		}
+	}
 }

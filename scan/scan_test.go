@@ -23,15 +23,18 @@ func mkItem(typ Type, text string) Token {
 }
 
 var (
-	tEOF             = mkItem(EOF, "EOF")
-	tBlankLine       = mkItem(BlankLine, "\n")
-	tSpace           = mkItem(Space, " ")
-	tSpace2          = mkItem(Space, "  ")
-	tSpace3          = mkItem(Space, "   ")
-	tComment         = mkItem(Comment, "..")
-	tHyperlinkStart  = mkItem(HyperlinkStart, "..")
-	tHyperlinkPrefix = mkItem(HyperlinkPrefix, "_")
-	tHyperlinkSuffix = mkItem(HyperlinkSuffix, ":")
+	tEOF                   = mkItem(EOF, "EOF")
+	tBlankLine             = mkItem(BlankLine, "\n")
+	tSpace                 = mkItem(Space, " ")
+	tSpace2                = mkItem(Space, "  ")
+	tSpace3                = mkItem(Space, "   ")
+	tComment               = mkItem(Comment, "..")
+	tHyperlinkStart        = mkItem(HyperlinkStart, "..")
+	tHyperlinkPrefix       = mkItem(HyperlinkPrefix, "_")
+	tHyperlinkSuffix       = mkItem(HyperlinkSuffix, ":")
+	tInlineReferenceOpen   = mkItem(InlineReferenceOpen, "`")
+	tInlineReferenceClose1 = mkItem(InlineReferenceClose, "_")
+	tInlineReferenceClose2 = mkItem(InlineReferenceClose, "`_")
 )
 
 var scanTests = []scanTest{
@@ -311,7 +314,31 @@ term 2
 		[]Token{
 			mkItem(Text, "External hyperlink targets:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "one-liner"), tHyperlinkSuffix,
-			tSpace, // TODO: hyperlink URI
+			tSpace, mkItem(HyperlinkURI, "http://structuredtext.sourceforge.net"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "starts-on-this-line"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "http://"), mkItem(Space, "                         "), mkItem(HyperlinkURI, "structuredtext."),
+			mkItem(Space, "                         "), mkItem(HyperlinkURI, "sourceforge.net"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "entirely-below"), tHyperlinkSuffix,
+			tSpace3, mkItem(HyperlinkURI, "http://structuredtext."), tSpace3, mkItem(HyperlinkURI, "sourceforge.net"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "escaped-whitespace"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, `http://example.org/a\ path\ with\`), tSpace3, mkItem(HyperlinkURI, "spaces.html"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "not-indirect"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, `uri\_`), tEOF,
+		},
+	},
+	{
+		"indirect hyperlink targets",
+		`Indirect hyperlink targets:
+
+.. _target1: reference_
+
+` + ".. _target2: `phrase-link reference`_",
+		[]Token{
+			mkItem(Text, "Indirect hyperlink targets:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target1"), tHyperlinkSuffix,
+			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target2"), tHyperlinkSuffix,
+			tSpace, tInlineReferenceOpen, mkItem(InlineReferenceText, "phrase-link reference"), tInlineReferenceClose2,
 			tEOF,
 		},
 	},

@@ -14,16 +14,19 @@ func _() {
 	_ = x[Space-3]
 	_ = x[Text-4]
 	_ = x[Comment-5]
-	_ = x[HyperlinkName-6]
+	_ = x[HyperlinkStart-6]
 	_ = x[HyperlinkPrefix-7]
-	_ = x[HyperlinkStart-8]
+	_ = x[HyperlinkName-8]
 	_ = x[HyperlinkSuffix-9]
 	_ = x[HyperlinkURI-10]
+	_ = x[InlineReferenceOpen-11]
+	_ = x[InlineReferenceText-12]
+	_ = x[InlineReferenceClose-13]
 }
 
-const _Type_name = "EOFErrorBlankLineSpaceTextCommentHyperlinkNameHyperlinkPrefixHyperlinkStartHyperlinkSuffixHyperlinkURI"
+const _Type_name = "EOFErrorBlankLineSpaceTextCommentHyperlinkStartHyperlinkPrefixHyperlinkNameHyperlinkSuffixHyperlinkURIInlineReferenceOpenInlineReferenceTextInlineReferenceClose"
 
-var _Type_index = [...]uint8{0, 3, 8, 17, 22, 26, 33, 46, 61, 75, 90, 102}
+var _Type_index = [...]uint8{0, 3, 8, 17, 22, 26, 33, 47, 62, 75, 90, 102, 121, 140, 160}
 
 func (i Type) String() string {
 	if i < 0 || i >= Type(len(_Type_index)-1) {
