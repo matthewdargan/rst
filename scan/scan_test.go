@@ -46,8 +46,7 @@ var scanTests = []scanTest{
 		"line comment",
 		`.. A comment
 
-Paragraph.
-`,
+Paragraph.`,
 		[]Token{tComment, tSpace, mkItem(Text, "A comment"), tBlankLine, mkItem(Text, "Paragraph."), tEOF},
 	},
 	{
@@ -55,8 +54,7 @@ Paragraph.
 		`.. A comment
    block.
 
-Paragraph.
-`,
+Paragraph.`,
 		[]Token{
 			tComment, tSpace, mkItem(Text, "A comment"), tSpace3, mkItem(Text, "block."),
 			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
@@ -67,8 +65,7 @@ Paragraph.
 		`..
    A comment consisting of multiple lines
    starting on the line after the
-   explicit markup start.
-`,
+   explicit markup start.`,
 		[]Token{
 			tComment, tSpace3, mkItem(Text, "A comment consisting of multiple lines"),
 			tSpace3, mkItem(Text, "starting on the line after the"),
@@ -80,8 +77,7 @@ Paragraph.
 		`.. A comment.
 .. Another.
 
-Paragraph.
-`,
+Paragraph.`,
 		[]Token{
 			tComment, tSpace, mkItem(Text, "A comment."),
 			tComment, tSpace, mkItem(Text, "Another."),
@@ -93,8 +89,7 @@ Paragraph.
 		`.. A comment
 no blank line
 
-Paragraph.
-`,
+Paragraph.`,
 		[]Token{
 			tComment, tSpace, mkItem(Text, "A comment"), mkItem(Text, "no blank line"),
 			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
@@ -106,8 +101,7 @@ Paragraph.
 .. Another.
 no blank line
 
-Paragraph.
-`,
+Paragraph.`,
 		[]Token{
 			tComment, tSpace, mkItem(Text, "A comment."),
 			tComment, tSpace, mkItem(Text, "Another."), mkItem(Text, "no blank line"),
@@ -118,8 +112,7 @@ Paragraph.
 		"line comment with directive",
 		`.. A comment::
 
-Paragraph.
-`,
+Paragraph.`,
 		[]Token{tComment, tSpace, mkItem(Text, "A comment::"), tBlankLine, mkItem(Text, "Paragraph."), tEOF},
 	},
 	{
@@ -128,8 +121,7 @@ Paragraph.
    comment::
 
 The extra newline before the comment text prevents
-the parser from recognizing a directive.
-`,
+the parser from recognizing a directive.`,
 		[]Token{
 			tComment, tSpace3, mkItem(Text, "comment::"), tBlankLine,
 			mkItem(Text, "The extra newline before the comment text prevents"),
@@ -142,8 +134,7 @@ the parser from recognizing a directive.
    _comment: http://example.org
 
 The extra newline before the comment text prevents
-the parser from recognizing a hyperlink target.
-`,
+the parser from recognizing a hyperlink target.`,
 		[]Token{
 			tComment, tSpace3, mkItem(Text, "_comment: http://example.org"), tBlankLine,
 			mkItem(Text, "The extra newline before the comment text prevents"),
@@ -156,8 +147,7 @@ the parser from recognizing a hyperlink target.
    [comment] Not a citation.
 
 The extra newline before the comment text prevents
-the parser from recognizing a citation.
-`,
+the parser from recognizing a citation.`,
 		[]Token{
 			tComment, tSpace3, mkItem(Text, "[comment] Not a citation."), tBlankLine,
 			mkItem(Text, "The extra newline before the comment text prevents"),
@@ -170,8 +160,7 @@ the parser from recognizing a citation.
    |comment| image:: bogus.png
 
 The extra newline before the comment text prevents
-the parser from recognizing a substitution definition.
-`,
+the parser from recognizing a substitution definition.`,
 		[]Token{
 			tComment, tSpace3, mkItem(Text, "|comment| image:: bogus.png"), tBlankLine,
 			mkItem(Text, "The extra newline before the comment text prevents"),
@@ -185,8 +174,7 @@ the parser from recognizing a substitution definition.
 
 ..
 
-    A block quote.
-`,
+    A block quote.`,
 		[]Token{
 			tComment, tSpace, mkItem(Text, "Next is an empty comment, which serves to end this comment and"),
 			tSpace3, mkItem(Text, "prevents the following block quote being swallowed up."),
@@ -203,8 +191,7 @@ the parser from recognizing a substitution definition.
   .. a comment
 
 term 2
-  definition 2
-`,
+  definition 2`,
 		[]Token{
 			mkItem(Text, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
 			tSpace2, mkItem(Text, "definition 1"), tBlankLine,
@@ -220,8 +207,7 @@ term 2
 .. a comment
 
 term 2
-  definition 2
-`,
+  definition 2`,
 		[]Token{
 			mkItem(Text, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
 			tSpace2, mkItem(Text, "definition 1"), tBlankLine,
@@ -237,8 +223,7 @@ term 2
 
   .. comment between bullet paragraphs 2 and 3
 
-  bullet paragraph 3
-`,
+  bullet paragraph 3`,
 		[]Token{
 			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
 			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 2"), tBlankLine,
@@ -252,8 +237,7 @@ term 2
 
   .. comment between bullet paragraphs 1 (leader) and 2
 
-  bullet paragraph 2
-`,
+  bullet paragraph 2`,
 		[]Token{
 			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
 			tBlankLine, tSpace2,
@@ -265,8 +249,7 @@ term 2
 		"comment trailing bullet paragraph",
 		`+ bullet
 
-  .. trailing comment
-`,
+  .. trailing comment`,
 		[]Token{
 			mkItem(Text, "+ bullet"), // TODO: Should be itemBullet once implemented
 			tBlankLine, tSpace2, tComment, tSpace, mkItem(Text, "trailing comment"), tEOF,
@@ -277,8 +260,7 @@ term 2
 		"hyperlink target",
 		`.. _target:
 
-(Internal hyperlink target.)
-`,
+(Internal hyperlink target.)`,
 		[]Token{
 			tHyperlinkStart, tSpace, tHyperlinkPrefix,
 			mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
@@ -309,8 +291,7 @@ term 2
 .. _escaped-whitespace: http://example.org/a\ path\ with\
    spaces.html
 
-.. _not-indirect: uri\_
-`,
+.. _not-indirect: uri\_`,
 		[]Token{
 			mkItem(Text, "External hyperlink targets:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "one-liner"), tHyperlinkSuffix,

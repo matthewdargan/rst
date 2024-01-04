@@ -210,9 +210,22 @@ func lexAny(l *Scanner) stateFn {
 		return lexHyperlinkName
 	case r == ':' && l.types[1] == HyperlinkName:
 		return lexEndOfLine(l, HyperlinkSuffix)
-	// TODO: Handle indirect hyperlink InlineReferenceText (everything before _), InlineReferenceClose here (_). CANNOT BE \_ (this would be external)
-	case l.types[1] == Space && (l.types[0] == HyperlinkSuffix || l.types[0] == HyperlinkURI):
+	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
+		if r == '`' {
+			return l.emit(InlineReferenceOpen)
+		}
+		return lexHyperlinkTarget
+	case l.types[0] == HyperlinkURI && l.types[1] == Space:
 		return lexUntilTerminator(l, HyperlinkURI)
+	case l.types[0] == InlineReferenceText && l.types[1] == Space:
+		return lexUntilTerminator(l, InlineReferenceText)
+	case l.types[1] == InlineReferenceOpen:
+		return lexInlineReferenceText
+	case l.types[1] == InlineReferenceText:
+		if r == '`' {
+			l.next()
+		}
+		return lexEndOfLine(l, InlineReferenceClose)
 	default:
 		return lexUntilTerminator(l, Text)
 	}
@@ -260,4 +273,36 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 			l.next()
 		}
 	}
+}
+
+// lexHyperlinkTarget scans a hyperlink target. The hyperlink target is known to be present.
+func lexHyperlinkTarget(l *Scanner) stateFn {
+	for {
+		switch l.peek() {
+		case '_':
+			if l.lastRune == '\\' {
+				l.next()
+				continue // Skip the escaped underscore
+			}
+			return l.emit(InlineReferenceText)
+		case eof:
+			return l.emit(HyperlinkURI)
+		case '\n':
+			i := l.emit(HyperlinkURI)
+			l.pos++
+			l.ignore()
+			return i
+		default:
+			l.next()
+		}
+	}
+}
+
+// lexInlineReferenceText scans inline reference text. The inline reference text is known to be present
+// and is preceded by an inline reference opening.
+func lexInlineReferenceText(l *Scanner) stateFn {
+	for l.peek() != '`' {
+		l.next()
+	}
+	return l.emit(InlineReferenceText)
 }
