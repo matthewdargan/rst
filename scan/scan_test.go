@@ -31,6 +31,7 @@ var (
 	tComment               = mkItem(Comment, "..")
 	tHyperlinkStart        = mkItem(HyperlinkStart, "..")
 	tHyperlinkPrefix       = mkItem(HyperlinkPrefix, "_")
+	tHyperlinkQuote        = mkItem(HyperlinkQuote, "`")
 	tHyperlinkSuffix       = mkItem(HyperlinkSuffix, ":")
 	tInlineReferenceOpen   = mkItem(InlineReferenceOpen, "`")
 	tInlineReferenceClose1 = mkItem(InlineReferenceClose, "_")
@@ -320,6 +321,21 @@ term 2
 			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target2"), tHyperlinkSuffix,
 			tSpace, tInlineReferenceOpen, mkItem(InlineReferenceText, "phrase-link reference"), tInlineReferenceClose2,
+			tEOF,
+		},
+	},
+	{
+		"escaped hyperlink target names",
+		`.. _a long target name:
+
+` + ".. _`a target name: including a colon (quoted)`:" + `
+
+.. _a target name\: including a colon (escaped):`,
+		[]Token{
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "a long target name"), tHyperlinkSuffix, tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "a target name: including a colon (quoted)"),
+			tHyperlinkQuote, tHyperlinkSuffix, tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, `a target name\: including a colon (escaped)`), tHyperlinkSuffix,
 			tEOF,
 		},
 	},
