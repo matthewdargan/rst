@@ -212,12 +212,12 @@ func lexAny(l *Scanner) stateFn {
 			return l.emit(HyperlinkQuote)
 		}
 		return lexHyperlinkName
-	case l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote:
-		return lexUntilBackquote(l, HyperlinkName)
 	case r == '`' && l.types[1] == HyperlinkName:
 		return l.emit(HyperlinkQuote)
-	case r == ':' && (l.types[1] == HyperlinkQuote || l.types[1] == HyperlinkName):
+	case r == ':' && (l.types[1] == HyperlinkName || (l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote)):
 		return lexEndOfLine(l, HyperlinkSuffix)
+	case l.types[0] == HyperlinkName || l.types[1] == HyperlinkQuote:
+		return lexHyperlinkName
 	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
 		if r == '`' {
 			return l.emit(InlineReferenceOpen)
@@ -228,7 +228,7 @@ func lexAny(l *Scanner) stateFn {
 	case l.types[0] == InlineReferenceText && l.types[1] == Space:
 		return lexUntilTerminator(l, InlineReferenceText)
 	case l.types[1] == InlineReferenceOpen:
-		return lexUntilBackquote(l, InlineReferenceText)
+		return lexInlineReferenceText
 	case l.types[1] == InlineReferenceText:
 		if r == '`' {
 			l.next()
@@ -258,26 +258,6 @@ func lexEndOfLine(l *Scanner, typ Type) stateFn {
 	return i
 }
 
-// lexHyperlinkName scans a hyperlink name. The hyperlink name is known to be present.
-// Escaped colons are considered part of the hyperlink name.
-func lexHyperlinkName(l *Scanner) stateFn {
-	for {
-		r := l.peek()
-		if r == ':' && l.lastRune != '\\' {
-			return l.emit(HyperlinkName)
-		}
-		l.next()
-	}
-}
-
-// lexUntilBackquote scans a lex item until a backquote character.
-func lexUntilBackquote(l *Scanner, typ Type) stateFn {
-	for l.peek() != '`' {
-		l.next()
-	}
-	return l.emit(typ)
-}
-
 // lexUntilTerminator scans a lex item until a newline or EOF.
 func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 	for {
@@ -286,6 +266,30 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 			return l.emit(typ)
 		case '\n':
 			i := l.emit(typ)
+			l.pos++
+			l.ignore()
+			return i
+		default:
+			l.next()
+		}
+	}
+}
+
+// lexHyperlinkName scans a hyperlink name. The hyperlink name is known to be present.
+// Escaped colons and characters within backquotes are considered part of the hyperlink name.
+func lexHyperlinkName(l *Scanner) stateFn {
+	for {
+		switch l.peek() {
+		case ':':
+			if l.lastRune == '\\' || l.types[1] == HyperlinkQuote {
+				l.next()
+				continue // Skip the escaped underscore
+			}
+			return l.emit(HyperlinkName)
+		case '`', eof:
+			return l.emit(HyperlinkName)
+		case '\n':
+			i := l.emit(HyperlinkName)
 			l.pos++
 			l.ignore()
 			return i
@@ -316,4 +320,13 @@ func lexHyperlinkTarget(l *Scanner) stateFn {
 			l.next()
 		}
 	}
+}
+
+// lexInlineReferenceText scans inline reference text. The inline reference text is known to be present
+// and is preceded by a backquote.
+func lexInlineReferenceText(l *Scanner) stateFn {
+	for l.peek() != '`' {
+		l.next()
+	}
+	return l.emit(InlineReferenceText)
 }

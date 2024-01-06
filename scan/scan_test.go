@@ -339,6 +339,37 @@ term 2
 			tEOF,
 		},
 	},
+	{
+		"hyperlink target names with no matching backquotes",
+		".. _`target: No matching backquote.\n.. _`: No matching backquote either.",
+		[]Token{
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "target: No matching backquote."),
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, ": No matching backquote either."), tEOF,
+		},
+	},
+	{
+		"hyperlink target names split across lines, 1 regular, 1 backquoted",
+		`.. _a very long target name,
+   split across lines:
+` + ".. _`and another,\n   with backquotes`:",
+		[]Token{
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "a very long target name,"),
+			tSpace3, mkItem(HyperlinkName, "split across lines"), tHyperlinkSuffix,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "and another,"),
+			tSpace3, mkItem(HyperlinkName, "with backquotes"), tHyperlinkQuote, tHyperlinkSuffix, tEOF,
+		},
+	},
+	{
+		"external hyperlink target",
+		`External hyperlink:
+
+.. _target: http://www.python.org/`,
+		[]Token{
+			mkItem(Text, "External hyperlink:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "http://www.python.org/"), tEOF,
+		},
+	},
 }
 
 // collect gathers the emitted items into a slice.
