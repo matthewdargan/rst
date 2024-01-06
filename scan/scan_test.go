@@ -180,7 +180,7 @@ the parser from recognizing a substitution definition.`,
 			tComment, tSpace, mkItem(Text, "Next is an empty comment, which serves to end this comment and"),
 			tSpace3, mkItem(Text, "prevents the following block quote being swallowed up."),
 			tBlankLine, tComment, tBlankLine, mkItem(Space, "    "),
-			mkItem(Text, "A block quote."), // TODO: Should be itemBlockQuote once implemented
+			mkItem(Text, "A block quote."), // TODO: Should be BlockQuote once implemented
 			tEOF,
 		},
 	},
@@ -194,7 +194,7 @@ the parser from recognizing a substitution definition.`,
 term 2
   definition 2`,
 		[]Token{
-			mkItem(Text, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
+			mkItem(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
 			tSpace2, mkItem(Text, "definition 1"), tBlankLine,
 			tSpace2, tComment, tSpace, mkItem(Text, "a comment"), tBlankLine,
 			mkItem(Text, "term 2"), tSpace2, mkItem(Text, "definition 2"), tEOF,
@@ -210,7 +210,7 @@ term 2
 term 2
   definition 2`,
 		[]Token{
-			mkItem(Text, "term 1"), // TODO: Should be itemDefinitionTerm once implemented
+			mkItem(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
 			tSpace2, mkItem(Text, "definition 1"), tBlankLine,
 			tComment, tSpace, mkItem(Text, "a comment"), tBlankLine,
 			mkItem(Text, "term 2"), tSpace2, mkItem(Text, "definition 2"), tEOF,
@@ -226,7 +226,7 @@ term 2
 
   bullet paragraph 3`,
 		[]Token{
-			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
+			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
 			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 2"), tBlankLine,
 			tSpace2, tComment, tSpace, mkItem(Text, "comment between bullet paragraphs 2 and 3"),
 			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 3"), tEOF,
@@ -240,7 +240,7 @@ term 2
 
   bullet paragraph 2`,
 		[]Token{
-			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be itemBullet once implemented
+			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
 			tBlankLine, tSpace2,
 			tComment, tSpace, mkItem(Text, "comment between bullet paragraphs 1 (leader) and 2"),
 			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 2"), tEOF,
@@ -252,11 +252,11 @@ term 2
 
   .. trailing comment`,
 		[]Token{
-			mkItem(Text, "+ bullet"), // TODO: Should be itemBullet once implemented
+			mkItem(Text, "+ bullet"), // TODO: Should be Bullet once implemented
 			tBlankLine, tSpace2, tComment, tSpace, mkItem(Text, "trailing comment"), tEOF,
 		},
 	},
-	// hyperlink targets
+	// targets
 	{
 		"hyperlink target",
 		`.. _target:
@@ -368,6 +368,221 @@ term 2
 			mkItem(Text, "External hyperlink:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
 			tSpace, mkItem(HyperlinkURI, "http://www.python.org/"), tEOF,
+		},
+	},
+	{
+		"email targets",
+		`.. _email: jdoe@example.com
+
+.. _multi-line email: jdoe
+   @example.com`,
+		[]Token{
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "email"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "jdoe@example.com"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "multi-line email"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "jdoe"), tSpace3, mkItem(HyperlinkURI, "@example.com"), tEOF,
+		},
+	},
+	{
+		"malformed target",
+		`Malformed target:
+
+.. __malformed: no good
+
+Target beginning with an underscore:
+
+` + ".. _`_target`: OK",
+		[]Token{
+			mkItem(Text, "Malformed target:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "_malformed"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "no good"), tBlankLine,
+			mkItem(Text, "Target beginning with an underscore:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "_target"), tHyperlinkQuote, tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "OK"), tEOF,
+		},
+	},
+	{
+		"duplicate external targets, different URIs",
+		`Duplicate external targets (different URIs):
+
+.. _target: first
+
+.. _target: second`,
+		[]Token{
+			mkItem(Text, "Duplicate external targets (different URIs):"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "first"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "second"), tEOF,
+		},
+	},
+	{
+		"duplicate external targets, same URIs",
+		`Duplicate external targets (same URIs):
+
+.. _target: first
+
+.. _target: first`,
+		[]Token{
+			mkItem(Text, "Duplicate external targets (same URIs):"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "first"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "first"), tEOF,
+		},
+	},
+	{
+		"duplicate implicit targets",
+		`Duplicate implicit targets.
+
+Title
+=====
+
+Paragraph.
+
+Title
+=====
+
+Paragraph.`,
+		[]Token{
+			mkItem(Text, "Duplicate implicit targets."), tBlankLine,
+			mkItem(Text, "Title"), mkItem(Text, "====="), // TODO: Should be Title once implemented
+			tBlankLine, mkItem(Text, "Paragraph."), tBlankLine,
+			mkItem(Text, "Title"), mkItem(Text, "====="),
+			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"duplicate implicit/explicit targets",
+		`Duplicate implicit/explicit targets.
+
+Title
+=====
+
+.. _title:
+
+Paragraph.`,
+		[]Token{
+			mkItem(Text, "Duplicate implicit/explicit targets."), tBlankLine,
+			mkItem(Text, "Title"), mkItem(Text, "====="), // TODO: Should be Title once implemented
+			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"duplicate implicit/directive targets",
+		`Duplicate implicit/directive targets.
+
+Title
+=====
+
+.. target-notes::
+   :name: title`,
+		[]Token{
+			mkItem(Text, "Duplicate implicit/directive targets."), tBlankLine,
+			mkItem(Text, "Title"), mkItem(Text, "====="), // TODO: Should be Title once implemented
+			tBlankLine, tComment, tSpace, mkItem(Text, "target-notes::"), // TODO: Should be Directive once implemented
+			tSpace3, mkItem(Text, ":name: title"), tEOF,
+		},
+	},
+	{
+		"duplicate explicit targets",
+		`Duplicate explicit targets.
+
+.. _title:
+
+First.
+
+.. _title:
+
+Second.
+
+.. _title:
+
+Third.`,
+		[]Token{
+			mkItem(Text, "Duplicate explicit targets."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, mkItem(Text, "First."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, mkItem(Text, "Second."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, mkItem(Text, "Third."), tEOF,
+		},
+	},
+	{
+		"duplicate explicit/directive targets",
+		`Duplicate explicit/directive targets.
+
+.. _title:
+
+First.
+
+.. rubric:: this is a title too
+   :name: title
+
+`,
+		[]Token{
+			mkItem(Text, "Duplicate explicit/directive targets."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, mkItem(Text, "First."), tBlankLine,
+			tComment, tSpace, mkItem(Text, "rubric:: this is a title too"), // TODO: Should be Directive once implemented
+			tSpace3, mkItem(Text, ":name: title"), tBlankLine, tEOF,
+		},
+	},
+	{
+		"duplicate targets",
+		`Duplicate targets:
+
+Target
+======
+
+Implicit section header target.
+
+.. [TARGET] Citation target.
+
+.. [#target] Autonumber-labeled footnote target.
+
+.. _target:
+
+Explicit internal target.
+
+.. _target: Explicit_external_target
+
+.. rubric:: directive with target
+   :name: Target`,
+		[]Token{
+			mkItem(Text, "Duplicate targets:"), tBlankLine,
+			mkItem(Text, "Target"), mkItem(Text, "======"), // TODO: Should be Title once implemented
+			tBlankLine, mkItem(Text, "Implicit section header target."), tBlankLine,
+			tComment, tSpace, mkItem(Text, "[TARGET] Citation target."), // TODO: Should be Citation once implemented
+			tBlankLine, tComment, tSpace, mkItem(Text, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote once implemented
+			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tBlankLine, mkItem(Text, "Explicit internal target."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "Explicit_external_target"), tBlankLine,
+			tComment, tSpace, mkItem(Text, "rubric:: directive with target"), // TODO: Should be Directive once implemented
+			tSpace3, mkItem(Text, ":name: Target"), tEOF,
+		},
+	},
+	{
+		"colon escapes",
+		`.. _unescaped colon at end:: no good
+
+.. _:: no good either
+
+.. _escaped colon\:: OK
+
+` + ".. _`unescaped colon, quoted: `: OK",
+		[]Token{
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "unescaped colon at end"), tHyperlinkSuffix,
+			mkItem(Text, ": no good"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, ":"), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "no good either"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, `escaped colon\:`), tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "OK"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "unescaped colon, quoted: "),
+			tHyperlinkQuote, tHyperlinkSuffix, tSpace, mkItem(HyperlinkURI, "OK"), tEOF,
 		},
 	},
 }

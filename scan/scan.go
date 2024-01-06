@@ -216,7 +216,7 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(HyperlinkQuote)
 	case r == ':' && (l.types[1] == HyperlinkName || (l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote)):
 		return lexEndOfLine(l, HyperlinkSuffix)
-	case l.types[0] == HyperlinkName || l.types[1] == HyperlinkQuote:
+	case (l.types[0] == HyperlinkName && l.types[1] == Space) || l.types[1] == HyperlinkQuote:
 		return lexHyperlinkName
 	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
 		if r == '`' {
@@ -304,9 +304,9 @@ func lexHyperlinkTarget(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
 		case '_':
-			if l.lastRune == '\\' {
+			if l.lastRune == '\\' || l.pos != len(l.input)-2 {
 				l.next()
-				continue // Skip the escaped underscore
+				continue // Skip the escaped underscore or underscore in target text
 			}
 			return l.emit(InlineReferenceText)
 		case eof:
