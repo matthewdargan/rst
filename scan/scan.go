@@ -201,7 +201,7 @@ func lexAny(l *Scanner) stateFn {
 		return lexQuote
 	case l.isHyperlinkName():
 		return lexHyperlinkName
-	case r == ':' && (l.types[1] == HyperlinkName || (l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote)):
+	case l.isHyperlinkSuffix(r):
 		return lexEndOfLine(l, HyperlinkSuffix)
 	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
 		return lexHyperlinkTarget
@@ -333,7 +333,14 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 // isHyperlinkName reports whether the scanner is on a hyperlink name.
 func (l *Scanner) isHyperlinkName() bool {
 	isPrefix := l.types[1] == HyperlinkPrefix
-	isQuotedPrefix := l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote
+	isPrefixedQuote := l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote
 	isContinuousName := l.types[0] == HyperlinkName && l.types[1] == Space
-	return isPrefix || isQuotedPrefix || isContinuousName
+	return isPrefix || isPrefixedQuote || isContinuousName
+}
+
+// isHyperlinkSuffix reports whether the scanner is on a hyperlink suffix.
+func (l *Scanner) isHyperlinkSuffix(r rune) bool {
+	isName := l.types[1] == HyperlinkName
+	isQuotedName := l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote
+	return r == ':' && (isName || isQuotedName)
 }
