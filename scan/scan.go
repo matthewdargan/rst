@@ -270,10 +270,7 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 		case eof:
 			return l.emit(typ)
 		case '\n':
-			i := l.emit(typ)
-			l.pos++
-			l.ignore()
-			return i
+			return lexEndOfLine(l, typ)
 		default:
 			l.next()
 		}
@@ -294,10 +291,7 @@ func lexHyperlinkName(l *Scanner) stateFn {
 		case '`', eof:
 			return l.emit(HyperlinkName)
 		case '\n':
-			i := l.emit(HyperlinkName)
-			l.pos++
-			l.ignore()
-			return i
+			return lexEndOfLine(l, HyperlinkName)
 		default:
 			l.next()
 		}
@@ -317,10 +311,7 @@ func lexHyperlinkTarget(l *Scanner) stateFn {
 		case eof:
 			return l.emit(HyperlinkURI)
 		case '\n':
-			i := l.emit(HyperlinkURI)
-			l.pos++
-			l.ignore()
-			return i
+			return lexEndOfLine(l, HyperlinkURI)
 		default:
 			l.next()
 		}
