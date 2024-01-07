@@ -203,7 +203,7 @@ func lexAny(l *Scanner) stateFn {
 		return lexHyperlinkName
 	case l.isHyperlinkSuffix(r):
 		return lexEndOfLine(l, HyperlinkSuffix)
-	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
+	case l.isHyperlinkTarget():
 		return lexHyperlinkTarget
 	case l.types[0] == HyperlinkURI && l.types[1] == Space:
 		return lexUntilTerminator(l, HyperlinkURI)
@@ -259,7 +259,7 @@ func lexQuote(l *Scanner) stateFn {
 	}
 }
 
-// lexUntilTerminator scans a lex item until a newline or EOF.
+// lexUntilTerminator scans a lex item until a newline or end-of-line character.
 func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 	for {
 		switch l.peek() {
@@ -274,16 +274,15 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 }
 
 // lexHyperlinkName scans a hyperlink name.
-// Escaped colons and quoted characters are considered part of the hyperlink name.
+// Escaped colons are part of the hyperlink name.
 func lexHyperlinkName(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
 		case ':':
-			if l.lastRune == '\\' || l.types[1] == HyperlinkQuote {
-				l.next()
-				continue // Skip the escaped underscore
+			if l.lastRune != '\\' && l.types[1] != HyperlinkQuote {
+				return l.emit(HyperlinkName)
 			}
-			return l.emit(HyperlinkName)
+			l.next()
 		case '`', eof:
 			return l.emit(HyperlinkName)
 		case '\n':
@@ -299,11 +298,10 @@ func lexHyperlinkTarget(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
 		case '_':
-			if l.lastRune == '\\' || l.pos != len(l.input)-2 {
-				l.next()
-				continue // Skip the escaped underscore or underscore in target text
+			if l.lastRune != '\\' && l.pos == len(l.input)-2 {
+				return l.emit(InlineReferenceText)
 			}
-			return l.emit(InlineReferenceText)
+			l.next()
 		case eof:
 			return l.emit(HyperlinkURI)
 		case '\n':
@@ -343,4 +341,9 @@ func (l *Scanner) isHyperlinkSuffix(r rune) bool {
 	isName := l.types[1] == HyperlinkName
 	isQuotedName := l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote
 	return r == ':' && (isName || isQuotedName)
+}
+
+// isHyperlinkTarget reports whether the scanner is on a hyperlink target.
+func (l *Scanner) isHyperlinkTarget() bool {
+	return l.types[0] == HyperlinkSuffix && l.types[1] == Space
 }
