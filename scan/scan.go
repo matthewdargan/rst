@@ -199,12 +199,8 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(BlankLine)
 	case unicode.IsSpace(r):
 		return lexSpace
-	case strings.HasPrefix(l.input[l.start:], hyperlinkMark):
-		l.next()
-		return l.emit(HyperlinkStart)
-	case r == '.' && l.peek() == '.':
-		l.next()
-		return lexEndOfLine(l, Comment)
+	case r == '.':
+		return lexCommentOrHyperlinkStart
 	case l.input[:l.pos] == hyperlinkMark:
 		return l.emit(HyperlinkPrefix)
 	case strings.HasSuffix(l.input[:l.start], hyperlinkMark):
@@ -245,6 +241,15 @@ func lexSpace(l *Scanner) stateFn {
 		l.next()
 	}
 	return l.emit(Space)
+}
+
+// lexCommentOrHyperlinkStart scans a comment or hyperlink start. ".." is known to be present.
+func lexCommentOrHyperlinkStart(l *Scanner) stateFn {
+	l.next()
+	if strings.HasPrefix(l.input[l.start:], hyperlinkMark) {
+		return l.emit(HyperlinkStart)
+	}
+	return lexEndOfLine(l, Comment)
 }
 
 // lexEndOfLine scans a lex item known to be present.
