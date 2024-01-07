@@ -199,12 +199,10 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(HyperlinkPrefix)
 	case r == '`':
 		return lexQuote
-	case l.types[1] == HyperlinkPrefix:
+	case l.isHyperlinkName():
 		return lexHyperlinkName
 	case r == ':' && (l.types[1] == HyperlinkName || (l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote)):
 		return lexEndOfLine(l, HyperlinkSuffix)
-	case (l.types[0] == HyperlinkName && l.types[1] == Space) || l.types[1] == HyperlinkQuote:
-		return lexHyperlinkName
 	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
 		return lexHyperlinkTarget
 	case l.types[0] == HyperlinkURI && l.types[1] == Space:
@@ -330,4 +328,12 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 		l.next()
 	}
 	return lexEndOfLine(l, InlineReferenceClose)
+}
+
+// isHyperlinkName reports whether the scanner is on a hyperlink name.
+func (l *Scanner) isHyperlinkName() bool {
+	isPrefix := l.types[1] == HyperlinkPrefix
+	isQuotedPrefix := l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote
+	isContinuousName := l.types[0] == HyperlinkName && l.types[1] == Space
+	return isPrefix || isQuotedPrefix || isContinuousName
 }
