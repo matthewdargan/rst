@@ -203,21 +203,15 @@ func lexAny(l *Scanner) stateFn {
 		return lexCommentOrHyperlinkStart
 	case l.input[:l.pos] == hyperlinkMark:
 		return l.emit(HyperlinkPrefix)
-	case strings.HasSuffix(l.input[:l.start], hyperlinkMark):
-		if r == '`' {
-			return l.emit(HyperlinkQuote)
-		}
+	case r == '`':
+		return lexQuote
+	case l.types[1] == HyperlinkPrefix:
 		return lexHyperlinkName
-	case r == '`' && l.types[1] == HyperlinkName:
-		return l.emit(HyperlinkQuote)
 	case r == ':' && (l.types[1] == HyperlinkName || (l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote)):
 		return lexEndOfLine(l, HyperlinkSuffix)
 	case (l.types[0] == HyperlinkName && l.types[1] == Space) || l.types[1] == HyperlinkQuote:
 		return lexHyperlinkName
 	case l.types[0] == HyperlinkSuffix && l.types[1] == Space:
-		if r == '`' {
-			return l.emit(InlineReferenceOpen)
-		}
 		return lexHyperlinkTarget
 	case l.types[0] == HyperlinkURI && l.types[1] == Space:
 		return lexUntilTerminator(l, HyperlinkURI)
@@ -226,10 +220,7 @@ func lexAny(l *Scanner) stateFn {
 	case l.types[1] == InlineReferenceOpen:
 		return lexInlineReferenceText
 	case l.types[1] == InlineReferenceText:
-		if r == '`' {
-			l.next()
-		}
-		return lexEndOfLine(l, InlineReferenceClose)
+		return lexInlineReferenceClose
 	default:
 		return lexUntilTerminator(l, Text)
 	}
@@ -243,7 +234,7 @@ func lexSpace(l *Scanner) stateFn {
 	return l.emit(Space)
 }
 
-// lexCommentOrHyperlinkStart scans a comment or hyperlink start. ".." is known to be present.
+// lexCommentOrHyperlinkStart scans a comment or hyperlink start.
 func lexCommentOrHyperlinkStart(l *Scanner) stateFn {
 	l.next()
 	if strings.HasPrefix(l.input[l.start:], hyperlinkMark) {
@@ -252,8 +243,7 @@ func lexCommentOrHyperlinkStart(l *Scanner) stateFn {
 	return lexEndOfLine(l, Comment)
 }
 
-// lexEndOfLine scans a lex item known to be present.
-// An end-of-line character is ignored if it is present.
+// lexEndOfLine scans a lex item and ignores an end-of-line character if present.
 func lexEndOfLine(l *Scanner, typ Type) stateFn {
 	i := l.emit(typ)
 	if l.peek() == '\n' {
@@ -261,6 +251,20 @@ func lexEndOfLine(l *Scanner, typ Type) stateFn {
 		l.ignore()
 	}
 	return i
+}
+
+// lexQuote scans a quote.
+func lexQuote(l *Scanner) stateFn {
+	switch l.types[1] {
+	case HyperlinkPrefix, HyperlinkName:
+		return l.emit(HyperlinkQuote)
+	case Space:
+		return l.emit(InlineReferenceOpen)
+	case InlineReferenceText:
+		return lexInlineReferenceClose
+	default:
+		return l.errorf("invalid state")
+	}
 }
 
 // lexUntilTerminator scans a lex item until a newline or EOF.
@@ -277,8 +281,8 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 	}
 }
 
-// lexHyperlinkName scans a hyperlink name. The hyperlink name is known to be present.
-// Escaped colons and characters within backquotes are considered part of the hyperlink name.
+// lexHyperlinkName scans a hyperlink name.
+// Escaped colons and quoted characters are considered part of the hyperlink name.
 func lexHyperlinkName(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
@@ -298,7 +302,7 @@ func lexHyperlinkName(l *Scanner) stateFn {
 	}
 }
 
-// lexHyperlinkTarget scans a hyperlink target. The hyperlink target is known to be present.
+// lexHyperlinkTarget scans a hyperlink target.
 func lexHyperlinkTarget(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
@@ -318,11 +322,18 @@ func lexHyperlinkTarget(l *Scanner) stateFn {
 	}
 }
 
-// lexInlineReferenceText scans inline reference text. The inline reference text is known to be present
-// and is preceded by a backquote.
+// lexInlineReferenceText scans inline reference text. A quote precedes the text.
 func lexInlineReferenceText(l *Scanner) stateFn {
 	for l.peek() != '`' {
 		l.next()
 	}
 	return l.emit(InlineReferenceText)
+}
+
+// lexInlineReferenceClose scans an inline reference close.
+func lexInlineReferenceClose(l *Scanner) stateFn {
+	if l.lastRune == '`' {
+		l.next()
+	}
+	return lexEndOfLine(l, InlineReferenceClose)
 }
