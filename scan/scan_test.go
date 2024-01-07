@@ -41,6 +41,7 @@ var (
 var scanTests = []scanTest{
 	{"empty", "", []Token{tEOF}},
 	{"spaces", " \t\n", []Token{mkItem(Space, " \t\n"), tEOF}},
+	{"quote error", "`", []Token{mkItem(Error, "expected hyperlink or inline reference before quote")}},
 	{"text", `now is the time`, []Token{mkItem(Text, "now is the time"), tEOF}},
 	// comments
 	{

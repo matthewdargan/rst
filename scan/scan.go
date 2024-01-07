@@ -69,7 +69,6 @@ type Scanner struct {
 	input     string        // the line of text being scanned.
 	lastRune  rune          // most recent return from next()
 	lastWidth int           // size of that rune
-	readOK    bool          // allow reading of a new line of input
 	line      int           // line number in input
 	pos       int           // current position in the input
 	start     int           // start position of this item
@@ -108,10 +107,6 @@ func (l *Scanner) loadLine() {
 // readRune reads the next rune from the input.
 func (l *Scanner) readRune() (rune, int) {
 	if !l.done && l.pos == len(l.input) {
-		if !l.readOK { // Token did not end before newline.
-			l.errorf("incomplete token")
-			return '\n', 1
-		}
 		l.loadLine()
 	}
 	if len(l.input) == l.pos {
@@ -175,7 +170,6 @@ func New(name string, r io.ByteReader) *Scanner {
 
 // Next returns the next token.
 func (l *Scanner) Next() Token {
-	l.readOK = true
 	l.lastRune = eof
 	l.lastWidth = 0
 	l.token = Token{EOF, l.pos, "EOF"}
@@ -263,7 +257,7 @@ func lexQuote(l *Scanner) stateFn {
 	case InlineReferenceText:
 		return lexInlineReferenceClose
 	default:
-		return l.errorf("invalid state")
+		return l.errorf("expected hyperlink or inline reference before quote")
 	}
 }
 
