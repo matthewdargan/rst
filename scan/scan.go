@@ -183,9 +183,9 @@ func (l *Scanner) Next() Token {
 }
 
 const (
-	hyperlinkMark        = ".. _"
-	inlineReferenceClose = "_"
-	escapedUnderscore    = `\_`
+	hyperlinkStart      = ".. _"
+	anonHyperlinkStart  = "__ "
+	anonHyperlinkPrefix = "__:"
 )
 
 // lexAny scans non-space items.
@@ -197,10 +197,12 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(BlankLine)
 	case unicode.IsSpace(r):
 		return lexSpace
-	case r == '.':
-		return lexCommentOrHyperlinkStart
-	case l.input[:l.pos] == hyperlinkMark:
-		return l.emit(HyperlinkPrefix)
+	case l.isComment(r):
+		return lexComment
+	case l.isHyperlinkStart(r):
+		return lexHyperlinkStart
+	case l.input[:l.pos] == hyperlinkStart:
+		return lexHyperlinkPrefix
 	case r == '`':
 		return lexQuote
 	case l.isHyperlinkName():
@@ -218,23 +220,6 @@ func lexAny(l *Scanner) stateFn {
 	}
 }
 
-// lexSpace scans a run of space characters.
-func lexSpace(l *Scanner) stateFn {
-	for unicode.IsSpace(l.peek()) {
-		l.next()
-	}
-	return l.emit(Space)
-}
-
-// lexCommentOrHyperlinkStart scans a comment or hyperlink start.
-func lexCommentOrHyperlinkStart(l *Scanner) stateFn {
-	l.next()
-	if strings.HasPrefix(l.input[l.start:], hyperlinkMark) {
-		return l.emit(HyperlinkStart)
-	}
-	return lexEndOfLine(l, Comment)
-}
-
 // lexEndOfLine scans a lex item and ignores an end-of-line character if present.
 func lexEndOfLine(l *Scanner, typ Type) stateFn {
 	i := l.emit(typ)
@@ -243,6 +228,40 @@ func lexEndOfLine(l *Scanner, typ Type) stateFn {
 		l.ignore()
 	}
 	return i
+}
+
+// lexUntilTerminator scans a lex item until a newline or end-of-line character.
+func lexUntilTerminator(l *Scanner, typ Type) stateFn {
+	for {
+		switch l.peek() {
+		case eof:
+			return l.emit(typ)
+		case '\n':
+			return lexEndOfLine(l, typ)
+		default:
+			l.next()
+		}
+	}
+}
+
+// lexSpace scans a run of space characters.
+func lexSpace(l *Scanner) stateFn {
+	for unicode.IsSpace(l.peek()) {
+		l.next()
+	}
+	return l.emit(Space)
+}
+
+// lexComment scans a comment.
+func lexComment(l *Scanner) stateFn {
+	l.next()
+	return lexEndOfLine(l, Comment)
+}
+
+// lexHyperlinkStart scans a hyperlink start.
+func lexHyperlinkStart(l *Scanner) stateFn {
+	l.next()
+	return l.emit(HyperlinkStart)
 }
 
 // lexQuote scans a quote.
@@ -259,18 +278,12 @@ func lexQuote(l *Scanner) stateFn {
 	}
 }
 
-// lexUntilTerminator scans a lex item until a newline or end-of-line character.
-func lexUntilTerminator(l *Scanner, typ Type) stateFn {
-	for {
-		switch l.peek() {
-		case eof:
-			return l.emit(typ)
-		case '\n':
-			return lexEndOfLine(l, typ)
-		default:
-			l.next()
-		}
+// lexHyperlinkPrefix scans a hyperlink prefix.
+func lexHyperlinkPrefix(l *Scanner) stateFn {
+	if strings.HasPrefix(l.input[l.start:], anonHyperlinkPrefix) {
+		l.next()
 	}
+	return l.emit(HyperlinkPrefix)
 }
 
 // lexHyperlinkName scans a hyperlink name.
@@ -320,18 +333,35 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 	return lexEndOfLine(l, InlineReferenceClose)
 }
 
+// isComment reports whether the scanner is on a comment.
+func (l *Scanner) isComment(r rune) bool {
+	return r == '.' && !strings.HasPrefix(l.input[l.start:], hyperlinkStart)
+}
+
+// isHyperlinkStart reports whether the scanner is on a hyperlink start.
+func (l *Scanner) isHyperlinkStart(r rune) bool {
+	switch r {
+	case '.':
+		return strings.HasPrefix(l.input[l.start:], hyperlinkStart)
+	case '_':
+		return strings.HasPrefix(l.input[l.start:], anonHyperlinkStart)
+	default:
+		return false
+	}
+}
+
 // isHyperlinkName reports whether the scanner is on a hyperlink name.
 func (l *Scanner) isHyperlinkName() bool {
-	if l.types[1] == HyperlinkPrefix {
-		return true
+	switch l.types[1] {
+	case HyperlinkPrefix:
+		return !strings.HasSuffix(l.input[:l.pos], anonHyperlinkPrefix)
+	case HyperlinkQuote:
+		return l.types[0] == HyperlinkPrefix
+	case Space:
+		return l.types[0] == HyperlinkName
+	default:
+		return false
 	}
-	if l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote {
-		return true
-	}
-	if l.types[0] == HyperlinkName && l.types[1] == Space {
-		return true
-	}
-	return false
 }
 
 // isHyperlinkSuffix reports whether the scanner is on a hyperlink suffix.
@@ -339,46 +369,51 @@ func (l *Scanner) isHyperlinkSuffix(r rune) bool {
 	if r != ':' {
 		return false
 	}
-	if l.types[1] == HyperlinkName {
+	switch l.types[1] {
+	case HyperlinkPrefix, HyperlinkName:
 		return true
+	case HyperlinkQuote:
+		return l.types[0] == HyperlinkName
+	default:
+		return false
 	}
-	if l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote {
-		return true
-	}
-	return false
 }
 
 // isHyperlinkURI reports whether the scanner is on a hyperlink URI.
 func (l *Scanner) isHyperlinkURI() bool {
-	if l.types[0] == HyperlinkURI && l.types[1] == Space {
-		return true
-	}
-	tr := strings.TrimSuffix(strings.TrimSuffix(l.input[l.pos:], "\n"), escapedUnderscore)
-	if strings.HasSuffix(tr, inlineReferenceClose) {
+	if isUnderscoreSuffix(l.input[l.pos:]) || l.types[1] != Space {
 		return false
 	}
-	if l.types[0] == HyperlinkSuffix && l.types[1] == Space {
+	switch l.types[0] {
+	case HyperlinkStart, HyperlinkSuffix, HyperlinkURI:
 		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // isInlineReferenceText reports whether the scanner is on inline reference text.
 func (l *Scanner) isInlineReferenceText() bool {
-	if l.types[1] == InlineReferenceOpen {
-		return true
-	}
-	if l.types[0] == InlineReferenceText && l.types[1] == Space {
-		return true
-	}
-	tr := strings.TrimSuffix(strings.TrimSuffix(l.input[l.pos:], "\n"), escapedUnderscore)
-	if !strings.HasSuffix(tr, inlineReferenceClose) {
+	if !isUnderscoreSuffix(l.input[l.pos:]) {
 		return false
 	}
-	if l.types[0] == HyperlinkSuffix && l.types[1] == Space {
+	switch l.types[1] {
+	case Space:
+		return l.types[0] == HyperlinkSuffix || l.types[0] == InlineReferenceText
+	case InlineReferenceOpen:
 		return true
+	default:
+		return false
 	}
-	return false
+}
+
+// isUnderscoreSuffix reports whether the string ends with an underscore.
+// An escaped underscore is invalid.
+func isUnderscoreSuffix(s string) bool {
+	if strings.HasSuffix(s, "\\_") || strings.HasSuffix(s, "\\_\n") {
+		return false
+	}
+	return strings.HasSuffix(s, "_") || strings.HasSuffix(s, "_\n")
 }
 
 // isInlineReferenceClose reports whether the scanner is on an inline reference close.

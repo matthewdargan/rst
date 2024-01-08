@@ -30,7 +30,9 @@ var (
 	tSpace3                = mkItem(Space, "   ")
 	tComment               = mkItem(Comment, "..")
 	tHyperlinkStart        = mkItem(HyperlinkStart, "..")
+	tAnonHyperlinkStart    = mkItem(HyperlinkStart, "__")
 	tHyperlinkPrefix       = mkItem(HyperlinkPrefix, "_")
+	tAnonHyperlinkPrefix   = mkItem(HyperlinkPrefix, "__")
 	tHyperlinkQuote        = mkItem(HyperlinkQuote, "`")
 	tHyperlinkSuffix       = mkItem(HyperlinkSuffix, ":")
 	tInlineReferenceOpen   = mkItem(InlineReferenceOpen, "`")
@@ -584,6 +586,28 @@ Explicit internal target.
 			tSpace, mkItem(HyperlinkURI, "OK"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "unescaped colon, quoted: "),
 			tHyperlinkQuote, tHyperlinkSuffix, tSpace, mkItem(HyperlinkURI, "OK"), tEOF,
+		},
+	},
+	// anonymous targets
+	{
+		"anonymous external hyperlink target",
+		`Anonymous external hyperlink target:
+
+.. __: http://w3c.org/`,
+		[]Token{
+			mkItem(Text, "Anonymous external hyperlink target:"), tBlankLine,
+			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix,
+			tSpace, mkItem(HyperlinkURI, "http://w3c.org/"), tEOF,
+		},
+	},
+	{
+		"anonymous external hyperlink target, alternative syntax",
+		`Anonymous external hyperlink target:
+
+__ http://w3c.org/`,
+		[]Token{
+			mkItem(Text, "Anonymous external hyperlink target:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, "http://w3c.org/"), tEOF,
 		},
 	},
 }
