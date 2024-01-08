@@ -64,9 +64,9 @@ type stateFn func(*Scanner) stateFn
 type Scanner struct {
 	r         io.ByteReader // reads input bytes
 	done      bool          // are we done scanning?
-	name      string        // the name of the input; used only for error reports
-	buf       []byte        // I/O buffer, re-used.
-	input     string        // the line of text being scanned.
+	name      string        // name of the input; used only for error reports
+	buf       []byte        // I/O buffer, re-used
+	input     string        // line of text being scanned
 	lastRune  rune          // most recent return from next()
 	lastWidth int           // size of that rune
 	line      int           // line number in input
@@ -182,7 +182,11 @@ func (l *Scanner) Next() Token {
 	}
 }
 
-const hyperlinkMark = ".. _"
+const (
+	hyperlinkMark        = ".. _"
+	inlineReferenceClose = "_"
+	escapedUnderscore    = `\_`
+)
 
 // lexAny scans non-space items.
 func lexAny(l *Scanner) stateFn {
@@ -203,15 +207,11 @@ func lexAny(l *Scanner) stateFn {
 		return lexHyperlinkName
 	case l.isHyperlinkSuffix(r):
 		return lexEndOfLine(l, HyperlinkSuffix)
-	case l.isHyperlinkTarget():
-		return lexHyperlinkTarget
-	case l.types[0] == HyperlinkURI && l.types[1] == Space:
+	case l.isHyperlinkURI():
 		return lexUntilTerminator(l, HyperlinkURI)
-	case l.types[0] == InlineReferenceText && l.types[1] == Space:
-		return lexUntilTerminator(l, InlineReferenceText)
-	case l.types[1] == InlineReferenceOpen:
+	case l.isInlineReferenceText():
 		return lexInlineReferenceText
-	case l.types[1] == InlineReferenceText:
+	case l.isInlineReferenceClose():
 		return lexInlineReferenceClose
 	default:
 		return lexUntilTerminator(l, Text)
@@ -293,31 +293,23 @@ func lexHyperlinkName(l *Scanner) stateFn {
 	}
 }
 
-// lexHyperlinkTarget scans a hyperlink target.
-func lexHyperlinkTarget(l *Scanner) stateFn {
+// lexInlineReferenceText scans inline reference text.
+func lexInlineReferenceText(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
 		case '_':
-			if l.lastRune != '\\' && l.pos == len(l.input)-2 {
+			if l.pos == len(l.input)-2 {
 				return l.emit(InlineReferenceText)
 			}
 			l.next()
-		case eof:
-			return l.emit(HyperlinkURI)
+		case '`', eof:
+			return l.emit(InlineReferenceText)
 		case '\n':
-			return lexEndOfLine(l, HyperlinkURI)
+			return lexEndOfLine(l, InlineReferenceText)
 		default:
 			l.next()
 		}
 	}
-}
-
-// lexInlineReferenceText scans inline reference text. A quote precedes the text.
-func lexInlineReferenceText(l *Scanner) stateFn {
-	for l.peek() != '`' {
-		l.next()
-	}
-	return l.emit(InlineReferenceText)
 }
 
 // lexInlineReferenceClose scans an inline reference close.
@@ -330,20 +322,66 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 
 // isHyperlinkName reports whether the scanner is on a hyperlink name.
 func (l *Scanner) isHyperlinkName() bool {
-	isPrefix := l.types[1] == HyperlinkPrefix
-	isPrefixedQuote := l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote
-	isContinuousName := l.types[0] == HyperlinkName && l.types[1] == Space
-	return isPrefix || isPrefixedQuote || isContinuousName
+	if l.types[1] == HyperlinkPrefix {
+		return true
+	}
+	if l.types[0] == HyperlinkPrefix && l.types[1] == HyperlinkQuote {
+		return true
+	}
+	if l.types[0] == HyperlinkName && l.types[1] == Space {
+		return true
+	}
+	return false
 }
 
 // isHyperlinkSuffix reports whether the scanner is on a hyperlink suffix.
 func (l *Scanner) isHyperlinkSuffix(r rune) bool {
-	isName := l.types[1] == HyperlinkName
-	isQuotedName := l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote
-	return r == ':' && (isName || isQuotedName)
+	if r != ':' {
+		return false
+	}
+	if l.types[1] == HyperlinkName {
+		return true
+	}
+	if l.types[0] == HyperlinkName && l.types[1] == HyperlinkQuote {
+		return true
+	}
+	return false
 }
 
-// isHyperlinkTarget reports whether the scanner is on a hyperlink target.
-func (l *Scanner) isHyperlinkTarget() bool {
-	return l.types[0] == HyperlinkSuffix && l.types[1] == Space
+// isHyperlinkURI reports whether the scanner is on a hyperlink URI.
+func (l *Scanner) isHyperlinkURI() bool {
+	if l.types[0] == HyperlinkURI && l.types[1] == Space {
+		return true
+	}
+	tr := strings.TrimSuffix(strings.TrimSuffix(l.input[l.pos:], "\n"), escapedUnderscore)
+	if strings.HasSuffix(tr, inlineReferenceClose) {
+		return false
+	}
+	if l.types[0] == HyperlinkSuffix && l.types[1] == Space {
+		return true
+	}
+	return false
+}
+
+// isInlineReferenceText reports whether the scanner is on inline reference text.
+func (l *Scanner) isInlineReferenceText() bool {
+	if l.types[1] == InlineReferenceOpen {
+		return true
+	}
+	if l.types[0] == InlineReferenceText && l.types[1] == Space {
+		return true
+	}
+	tr := strings.TrimSuffix(strings.TrimSuffix(l.input[l.pos:], "\n"), escapedUnderscore)
+	if !strings.HasSuffix(tr, inlineReferenceClose) {
+		return false
+	}
+	if l.types[0] == HyperlinkSuffix && l.types[1] == Space {
+		return true
+	}
+	return false
+}
+
+// isInlineReferenceClose reports whether the scanner is on an inline reference close.
+func (l *Scanner) isInlineReferenceClose() bool {
+	return l.types[1] == InlineReferenceText
 }
