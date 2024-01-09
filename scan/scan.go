@@ -406,7 +406,12 @@ func isUnderscoreSuffix(s string) bool {
 func (l *Scanner) isInlineReferenceText() bool {
 	switch l.types[1] {
 	case Space:
-		return l.types[0] == HyperlinkSuffix || l.types[0] == InlineReferenceText
+		switch l.types[0] {
+		case HyperlinkStart, HyperlinkSuffix, InlineReferenceText:
+			return true
+		default:
+			return false
+		}
 	case InlineReferenceOpen:
 		return true
 	default:

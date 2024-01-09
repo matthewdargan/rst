@@ -617,8 +617,8 @@ __ http://w3c.org/`,
 .. __: reference_`,
 		[]Token{
 			mkItem(Text, "Anonymous indirect hyperlink target:"), tBlankLine,
-			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix,
-			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
+			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
+			mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
 		},
 	},
 	{
@@ -632,6 +632,52 @@ __ this URI ends with an underscore_`,
 			mkItem(Text, "Anonymous external hyperlink target, not indirect:"), tBlankLine,
 			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, `uri\_`), tBlankLine,
 			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, "this URI ends with an underscore_"), tEOF,
+		},
+	},
+	{
+		"anonymous indirect hyperlink targets",
+		`Anonymous indirect hyperlink targets:
+
+__ reference_
+` + "__ `a very long\n   reference`_",
+		[]Token{
+			mkItem(Text, "Anonymous indirect hyperlink targets:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, tInlineReferenceOpen, mkItem(InlineReferenceText, "a very long"),
+			tSpace3, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose2, tEOF,
+		},
+	},
+	{
+		"mixed anonymous/named indirect hyperlink targets",
+		`Mixed anonymous & named indirect hyperlink targets:
+
+__ reference_
+.. __: reference_
+__ reference_
+.. _target1: reference_
+no blank line
+
+.. _target2: reference_
+__ reference_
+.. __: reference_
+__ reference_
+no blank line`,
+		[]Token{
+			mkItem(Text, "Mixed anonymous & named indirect hyperlink targets:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
+			mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target1"), tHyperlinkSuffix,
+			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			mkItem(Text, "no blank line"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target2"), tHyperlinkSuffix,
+			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
+			mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			mkItem(Text, "no blank line"), tEOF,
 		},
 	},
 }
