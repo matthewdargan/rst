@@ -381,7 +381,11 @@ func (l *Scanner) isHyperlinkSuffix(r rune) bool {
 
 // isHyperlinkURI reports whether the scanner is on a hyperlink URI.
 func (l *Scanner) isHyperlinkURI() bool {
-	if isUnderscoreSuffix(l.input[l.pos:]) || l.types[1] != Space {
+	if l.types[1] != Space {
+		return false
+	}
+	tr := strings.TrimSuffix(l.input[l.pos:], "\n")
+	if isUnderscoreSuffix(tr) && !strings.ContainsFunc(tr, unicode.IsSpace) {
 		return false
 	}
 	switch l.types[0] {
@@ -392,11 +396,14 @@ func (l *Scanner) isHyperlinkURI() bool {
 	}
 }
 
+// isUnderscoreSuffix reports whether the string ends with an underscore.
+// An escaped underscore is invalid.
+func isUnderscoreSuffix(s string) bool {
+	return strings.HasSuffix(s, "_") && !strings.HasSuffix(s, "\\_")
+}
+
 // isInlineReferenceText reports whether the scanner is on inline reference text.
 func (l *Scanner) isInlineReferenceText() bool {
-	if !isUnderscoreSuffix(l.input[l.pos:]) {
-		return false
-	}
 	switch l.types[1] {
 	case Space:
 		return l.types[0] == HyperlinkSuffix || l.types[0] == InlineReferenceText
@@ -405,15 +412,6 @@ func (l *Scanner) isInlineReferenceText() bool {
 	default:
 		return false
 	}
-}
-
-// isUnderscoreSuffix reports whether the string ends with an underscore.
-// An escaped underscore is invalid.
-func isUnderscoreSuffix(s string) bool {
-	if strings.HasSuffix(s, "\\_") || strings.HasSuffix(s, "\\_\n") {
-		return false
-	}
-	return strings.HasSuffix(s, "_") || strings.HasSuffix(s, "_\n")
 }
 
 // isInlineReferenceClose reports whether the scanner is on an inline reference close.

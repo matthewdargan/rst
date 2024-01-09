@@ -621,6 +621,19 @@ __ http://w3c.org/`,
 			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
 		},
 	},
+	{
+		"anonymous external hyperlink targets",
+		`Anonymous external hyperlink target, not indirect:
+
+__ uri\_
+
+__ this URI ends with an underscore_`,
+		[]Token{
+			mkItem(Text, "Anonymous external hyperlink target, not indirect:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, `uri\_`), tBlankLine,
+			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, "this URI ends with an underscore_"), tEOF,
+		},
+	},
 }
 
 // collect gathers the emitted items into a slice.
