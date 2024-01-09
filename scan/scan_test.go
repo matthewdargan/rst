@@ -610,6 +610,17 @@ __ http://w3c.org/`,
 			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, "http://w3c.org/"), tEOF,
 		},
 	},
+	{
+		"anonymous indirect hyperlink target",
+		`Anonymous indirect hyperlink target:
+
+.. __: reference_`,
+		[]Token{
+			mkItem(Text, "Anonymous indirect hyperlink target:"), tBlankLine,
+			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix,
+			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
+		},
+	},
 }
 
 // collect gathers the emitted items into a slice.

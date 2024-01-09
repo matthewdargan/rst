@@ -311,7 +311,7 @@ func lexInlineReferenceText(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
 		case '_':
-			if l.pos == len(l.input)-2 {
+			if l.pos >= len(l.input)-2 {
 				return l.emit(InlineReferenceText)
 			}
 			l.next()
