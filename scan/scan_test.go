@@ -15,43 +15,40 @@ type scanTest struct {
 	items []Token
 }
 
-func mkItem(typ Type, text string) Token {
-	return Token{
-		Type: typ,
-		Text: text,
-	}
+func item(typ Type, text string) Token {
+	return Token{Type: typ, Text: text}
 }
 
 var (
-	tEOF                   = mkItem(EOF, "EOF")
-	tBlankLine             = mkItem(BlankLine, "\n")
-	tSpace                 = mkItem(Space, " ")
-	tSpace2                = mkItem(Space, "  ")
-	tSpace3                = mkItem(Space, "   ")
-	tComment               = mkItem(Comment, "..")
-	tHyperlinkStart        = mkItem(HyperlinkStart, "..")
-	tAnonHyperlinkStart    = mkItem(HyperlinkStart, "__")
-	tHyperlinkPrefix       = mkItem(HyperlinkPrefix, "_")
-	tAnonHyperlinkPrefix   = mkItem(HyperlinkPrefix, "__")
-	tHyperlinkQuote        = mkItem(HyperlinkQuote, "`")
-	tHyperlinkSuffix       = mkItem(HyperlinkSuffix, ":")
-	tInlineReferenceOpen   = mkItem(InlineReferenceOpen, "`")
-	tInlineReferenceClose1 = mkItem(InlineReferenceClose, "_")
-	tInlineReferenceClose2 = mkItem(InlineReferenceClose, "`_")
+	tEOF                   = item(EOF, "EOF")
+	tBlankLine             = item(BlankLine, "\n")
+	tSpace                 = item(Space, " ")
+	tSpace2                = item(Space, "  ")
+	tSpace3                = item(Space, "   ")
+	tComment               = item(Comment, "..")
+	tHyperlinkStart        = item(HyperlinkStart, "..")
+	tAnonHyperlinkStart    = item(HyperlinkStart, "__")
+	tHyperlinkPrefix       = item(HyperlinkPrefix, "_")
+	tAnonHyperlinkPrefix   = item(HyperlinkPrefix, "__")
+	tHyperlinkQuote        = item(HyperlinkQuote, "`")
+	tHyperlinkSuffix       = item(HyperlinkSuffix, ":")
+	tInlineReferenceOpen   = item(InlineReferenceOpen, "`")
+	tInlineReferenceClose1 = item(InlineReferenceClose, "_")
+	tInlineReferenceClose2 = item(InlineReferenceClose, "`_")
 )
 
 var scanTests = []scanTest{
 	{"empty", "", []Token{tEOF}},
-	{"spaces", " \t\n", []Token{mkItem(Space, " \t\n"), tEOF}},
-	{"quote error", "`", []Token{mkItem(Error, "expected hyperlink or inline reference before quote")}},
-	{"text", `now is the time`, []Token{mkItem(Text, "now is the time"), tEOF}},
+	{"spaces", " \t\n", []Token{item(Space, " \t\n"), tEOF}},
+	{"quote error", "`", []Token{item(Error, "expected hyperlink or inline reference before quote")}},
+	{"text", `now is the time`, []Token{item(Text, "now is the time"), tEOF}},
 	// comments
 	{
 		"line comment",
 		`.. A comment
 
 Paragraph.`,
-		[]Token{tComment, tSpace, mkItem(Text, "A comment"), tBlankLine, mkItem(Text, "Paragraph."), tEOF},
+		[]Token{tComment, tSpace, item(Text, "A comment"), tBlankLine, item(Text, "Paragraph."), tEOF},
 	},
 	{
 		"comment block",
@@ -60,8 +57,8 @@ Paragraph.`,
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, mkItem(Text, "A comment"), tSpace3, mkItem(Text, "block."),
-			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Text, "A comment"), tSpace3, item(Text, "block."),
+			tBlankLine, item(Text, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -71,9 +68,9 @@ Paragraph.`,
    starting on the line after the
    explicit markup start.`,
 		[]Token{
-			tComment, tSpace3, mkItem(Text, "A comment consisting of multiple lines"),
-			tSpace3, mkItem(Text, "starting on the line after the"),
-			tSpace3, mkItem(Text, "explicit markup start."), tEOF,
+			tComment, tSpace3, item(Text, "A comment consisting of multiple lines"),
+			tSpace3, item(Text, "starting on the line after the"),
+			tSpace3, item(Text, "explicit markup start."), tEOF,
 		},
 	},
 	{
@@ -83,9 +80,9 @@ Paragraph.`,
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, mkItem(Text, "A comment."),
-			tComment, tSpace, mkItem(Text, "Another."),
-			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Text, "A comment."),
+			tComment, tSpace, item(Text, "Another."),
+			tBlankLine, item(Text, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -95,8 +92,8 @@ no blank line
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, mkItem(Text, "A comment"), mkItem(Text, "no blank line"),
-			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Text, "A comment"), item(Text, "no blank line"),
+			tBlankLine, item(Text, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -107,9 +104,9 @@ no blank line
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, mkItem(Text, "A comment."),
-			tComment, tSpace, mkItem(Text, "Another."), mkItem(Text, "no blank line"),
-			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Text, "A comment."),
+			tComment, tSpace, item(Text, "Another."), item(Text, "no blank line"),
+			tBlankLine, item(Text, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -117,7 +114,7 @@ Paragraph.`,
 		`.. A comment::
 
 Paragraph.`,
-		[]Token{tComment, tSpace, mkItem(Text, "A comment::"), tBlankLine, mkItem(Text, "Paragraph."), tEOF},
+		[]Token{tComment, tSpace, item(Text, "A comment::"), tBlankLine, item(Text, "Paragraph."), tEOF},
 	},
 	{
 		"comment block with directive",
@@ -127,9 +124,9 @@ Paragraph.`,
 The extra newline before the comment text prevents
 the parser from recognizing a directive.`,
 		[]Token{
-			tComment, tSpace3, mkItem(Text, "comment::"), tBlankLine,
-			mkItem(Text, "The extra newline before the comment text prevents"),
-			mkItem(Text, "the parser from recognizing a directive."), tEOF,
+			tComment, tSpace3, item(Text, "comment::"), tBlankLine,
+			item(Text, "The extra newline before the comment text prevents"),
+			item(Text, "the parser from recognizing a directive."), tEOF,
 		},
 	},
 	{
@@ -140,9 +137,9 @@ the parser from recognizing a directive.`,
 The extra newline before the comment text prevents
 the parser from recognizing a hyperlink target.`,
 		[]Token{
-			tComment, tSpace3, mkItem(Text, "_comment: http://example.org"), tBlankLine,
-			mkItem(Text, "The extra newline before the comment text prevents"),
-			mkItem(Text, "the parser from recognizing a hyperlink target."), tEOF,
+			tComment, tSpace3, item(Text, "_comment: http://example.org"), tBlankLine,
+			item(Text, "The extra newline before the comment text prevents"),
+			item(Text, "the parser from recognizing a hyperlink target."), tEOF,
 		},
 	},
 	{
@@ -153,9 +150,9 @@ the parser from recognizing a hyperlink target.`,
 The extra newline before the comment text prevents
 the parser from recognizing a citation.`,
 		[]Token{
-			tComment, tSpace3, mkItem(Text, "[comment] Not a citation."), tBlankLine,
-			mkItem(Text, "The extra newline before the comment text prevents"),
-			mkItem(Text, "the parser from recognizing a citation."), tEOF,
+			tComment, tSpace3, item(Text, "[comment] Not a citation."), tBlankLine,
+			item(Text, "The extra newline before the comment text prevents"),
+			item(Text, "the parser from recognizing a citation."), tEOF,
 		},
 	},
 	{
@@ -166,9 +163,9 @@ the parser from recognizing a citation.`,
 The extra newline before the comment text prevents
 the parser from recognizing a substitution definition.`,
 		[]Token{
-			tComment, tSpace3, mkItem(Text, "|comment| image:: bogus.png"), tBlankLine,
-			mkItem(Text, "The extra newline before the comment text prevents"),
-			mkItem(Text, "the parser from recognizing a substitution definition."), tEOF,
+			tComment, tSpace3, item(Text, "|comment| image:: bogus.png"), tBlankLine,
+			item(Text, "The extra newline before the comment text prevents"),
+			item(Text, "the parser from recognizing a substitution definition."), tEOF,
 		},
 	},
 	{
@@ -180,10 +177,10 @@ the parser from recognizing a substitution definition.`,
 
     A block quote.`,
 		[]Token{
-			tComment, tSpace, mkItem(Text, "Next is an empty comment, which serves to end this comment and"),
-			tSpace3, mkItem(Text, "prevents the following block quote being swallowed up."),
-			tBlankLine, tComment, tBlankLine, mkItem(Space, "    "),
-			mkItem(Text, "A block quote."), // TODO: Should be BlockQuote once implemented
+			tComment, tSpace, item(Text, "Next is an empty comment, which serves to end this comment and"),
+			tSpace3, item(Text, "prevents the following block quote being swallowed up."),
+			tBlankLine, tComment, tBlankLine, item(Space, "    "),
+			item(Text, "A block quote."), // TODO: Should be BlockQuote once implemented
 			tEOF,
 		},
 	},
@@ -197,10 +194,10 @@ the parser from recognizing a substitution definition.`,
 term 2
   definition 2`,
 		[]Token{
-			mkItem(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
-			tSpace2, mkItem(Text, "definition 1"), tBlankLine,
-			tSpace2, tComment, tSpace, mkItem(Text, "a comment"), tBlankLine,
-			mkItem(Text, "term 2"), tSpace2, mkItem(Text, "definition 2"), tEOF,
+			item(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
+			tSpace2, item(Text, "definition 1"), tBlankLine,
+			tSpace2, tComment, tSpace, item(Text, "a comment"), tBlankLine,
+			item(Text, "term 2"), tSpace2, item(Text, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -213,10 +210,10 @@ term 2
 term 2
   definition 2`,
 		[]Token{
-			mkItem(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
-			tSpace2, mkItem(Text, "definition 1"), tBlankLine,
-			tComment, tSpace, mkItem(Text, "a comment"), tBlankLine,
-			mkItem(Text, "term 2"), tSpace2, mkItem(Text, "definition 2"), tEOF,
+			item(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
+			tSpace2, item(Text, "definition 1"), tBlankLine,
+			tComment, tSpace, item(Text, "a comment"), tBlankLine,
+			item(Text, "term 2"), tSpace2, item(Text, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -229,10 +226,10 @@ term 2
 
   bullet paragraph 3`,
 		[]Token{
-			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 2"), tBlankLine,
-			tSpace2, tComment, tSpace, mkItem(Text, "comment between bullet paragraphs 2 and 3"),
-			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 3"), tEOF,
+			item(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
+			tBlankLine, tSpace2, item(Text, "bullet paragraph 2"), tBlankLine,
+			tSpace2, tComment, tSpace, item(Text, "comment between bullet paragraphs 2 and 3"),
+			tBlankLine, tSpace2, item(Text, "bullet paragraph 3"), tEOF,
 		},
 	},
 	{
@@ -243,10 +240,10 @@ term 2
 
   bullet paragraph 2`,
 		[]Token{
-			mkItem(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
+			item(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
 			tBlankLine, tSpace2,
-			tComment, tSpace, mkItem(Text, "comment between bullet paragraphs 1 (leader) and 2"),
-			tBlankLine, tSpace2, mkItem(Text, "bullet paragraph 2"), tEOF,
+			tComment, tSpace, item(Text, "comment between bullet paragraphs 1 (leader) and 2"),
+			tBlankLine, tSpace2, item(Text, "bullet paragraph 2"), tEOF,
 		},
 	},
 	{
@@ -255,9 +252,13 @@ term 2
 
   .. trailing comment`,
 		[]Token{
-			mkItem(Text, "+ bullet"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2, tComment, tSpace, mkItem(Text, "trailing comment"), tEOF,
+			item(Text, "+ bullet"), // TODO: Should be Bullet once implemented
+			tBlankLine, tSpace2, tComment, tSpace, item(Text, "trailing comment"), tEOF,
 		},
+	},
+	{
+		"comment, not target", ".. _",
+		[]Token{tComment, tSpace, item(Text, "_"), tEOF},
 	},
 	// targets
 	{
@@ -267,14 +268,14 @@ term 2
 (Internal hyperlink target.)`,
 		[]Token{
 			tHyperlinkStart, tSpace, tHyperlinkPrefix,
-			mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "(Internal hyperlink target.)"), tEOF,
+			item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "(Internal hyperlink target.)"), tEOF,
 		},
 	},
 	{
 		"hyperlink target with optional space before colon", ".. _optional space before colon :",
 		[]Token{
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "optional space before colon "),
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "optional space before colon "),
 			tHyperlinkSuffix, tEOF,
 		},
 	},
@@ -297,18 +298,18 @@ term 2
 
 .. _not-indirect: uri\_`,
 		[]Token{
-			mkItem(Text, "External hyperlink targets:"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "one-liner"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "http://structuredtext.sourceforge.net"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "starts-on-this-line"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "http://"), mkItem(Space, "                         "), mkItem(HyperlinkURI, "structuredtext."),
-			mkItem(Space, "                         "), mkItem(HyperlinkURI, "sourceforge.net"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "entirely-below"), tHyperlinkSuffix,
-			tSpace3, mkItem(HyperlinkURI, "http://structuredtext."), tSpace3, mkItem(HyperlinkURI, "sourceforge.net"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "escaped-whitespace"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, `http://example.org/a\ path\ with\`), tSpace3, mkItem(HyperlinkURI, "spaces.html"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "not-indirect"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, `uri\_`), tEOF,
+			item(Text, "External hyperlink targets:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "one-liner"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "http://structuredtext.sourceforge.net"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "starts-on-this-line"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "http://"), item(Space, "                         "), item(HyperlinkURI, "structuredtext."),
+			item(Space, "                         "), item(HyperlinkURI, "sourceforge.net"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "entirely-below"), tHyperlinkSuffix,
+			tSpace3, item(HyperlinkURI, "http://structuredtext."), tSpace3, item(HyperlinkURI, "sourceforge.net"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "escaped-whitespace"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, `http://example.org/a\ path\ with\`), tSpace3, item(HyperlinkURI, "spaces.html"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "not-indirect"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, `uri\_`), tEOF,
 		},
 	},
 	{
@@ -319,11 +320,11 @@ term 2
 
 ` + ".. _target2: `phrase-link reference`_",
 		[]Token{
-			mkItem(Text, "Indirect hyperlink targets:"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target1"), tHyperlinkSuffix,
-			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target2"), tHyperlinkSuffix,
-			tSpace, tInlineReferenceOpen, mkItem(InlineReferenceText, "phrase-link reference"), tInlineReferenceClose2,
+			item(Text, "Indirect hyperlink targets:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target1"), tHyperlinkSuffix,
+			tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1, tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target2"), tHyperlinkSuffix,
+			tSpace, tInlineReferenceOpen, item(InlineReferenceText, "phrase-link reference"), tInlineReferenceClose2,
 			tEOF,
 		},
 	},
@@ -335,10 +336,10 @@ term 2
 
 .. _a target name\: including a colon (escaped):`,
 		[]Token{
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "a long target name"), tHyperlinkSuffix, tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "a target name: including a colon (quoted)"),
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "a long target name"), tHyperlinkSuffix, tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, "a target name: including a colon (quoted)"),
 			tHyperlinkQuote, tHyperlinkSuffix, tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, `a target name\: including a colon (escaped)`), tHyperlinkSuffix,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, `a target name\: including a colon (escaped)`), tHyperlinkSuffix,
 			tEOF,
 		},
 	},
@@ -346,8 +347,8 @@ term 2
 		"hyperlink target names with no matching backquotes",
 		".. _`target: No matching backquote.\n.. _`: No matching backquote either.",
 		[]Token{
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "target: No matching backquote."),
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, ": No matching backquote either."), tEOF,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, "target: No matching backquote."),
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, ": No matching backquote either."), tEOF,
 		},
 	},
 	{
@@ -356,10 +357,10 @@ term 2
    split across lines:
 ` + ".. _`and another,\n   with backquotes`:",
 		[]Token{
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "a very long target name,"),
-			tSpace3, mkItem(HyperlinkName, "split across lines"), tHyperlinkSuffix,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "and another,"),
-			tSpace3, mkItem(HyperlinkName, "with backquotes"), tHyperlinkQuote, tHyperlinkSuffix, tEOF,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "a very long target name,"),
+			tSpace3, item(HyperlinkName, "split across lines"), tHyperlinkSuffix,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, "and another,"),
+			tSpace3, item(HyperlinkName, "with backquotes"), tHyperlinkQuote, tHyperlinkSuffix, tEOF,
 		},
 	},
 	{
@@ -368,9 +369,9 @@ term 2
 
 .. _target: http://www.python.org/`,
 		[]Token{
-			mkItem(Text, "External hyperlink:"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "http://www.python.org/"), tEOF,
+			item(Text, "External hyperlink:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "http://www.python.org/"), tEOF,
 		},
 	},
 	{
@@ -380,10 +381,10 @@ term 2
 .. _multi-line email: jdoe
    @example.com`,
 		[]Token{
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "email"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "jdoe@example.com"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "multi-line email"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "jdoe"), tSpace3, mkItem(HyperlinkURI, "@example.com"), tEOF,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "email"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "jdoe@example.com"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "multi-line email"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "jdoe"), tSpace3, item(HyperlinkURI, "@example.com"), tEOF,
 		},
 	},
 	{
@@ -396,12 +397,12 @@ Target beginning with an underscore:
 
 ` + ".. _`_target`: OK",
 		[]Token{
-			mkItem(Text, "Malformed target:"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "_malformed"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "no good"), tBlankLine,
-			mkItem(Text, "Target beginning with an underscore:"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "_target"), tHyperlinkQuote, tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "OK"), tEOF,
+			item(Text, "Malformed target:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "_malformed"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "no good"), tBlankLine,
+			item(Text, "Target beginning with an underscore:"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, "_target"), tHyperlinkQuote, tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "OK"), tEOF,
 		},
 	},
 	{
@@ -412,11 +413,11 @@ Target beginning with an underscore:
 
 .. _target: second`,
 		[]Token{
-			mkItem(Text, "Duplicate external targets (different URIs):"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "first"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "second"), tEOF,
+			item(Text, "Duplicate external targets (different URIs):"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "first"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "second"), tEOF,
 		},
 	},
 	{
@@ -427,11 +428,11 @@ Target beginning with an underscore:
 
 .. _target: first`,
 		[]Token{
-			mkItem(Text, "Duplicate external targets (same URIs):"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "first"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "first"), tEOF,
+			item(Text, "Duplicate external targets (same URIs):"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "first"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "first"), tEOF,
 		},
 	},
 	{
@@ -448,11 +449,11 @@ Title
 
 Paragraph.`,
 		[]Token{
-			mkItem(Text, "Duplicate implicit targets."), tBlankLine,
-			mkItem(Text, "Title"), mkItem(Text, "====="), // TODO: Should be Title once implemented
-			tBlankLine, mkItem(Text, "Paragraph."), tBlankLine,
-			mkItem(Text, "Title"), mkItem(Text, "====="),
-			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+			item(Text, "Duplicate implicit targets."), tBlankLine,
+			item(Text, "Title"), item(Text, "====="), // TODO: Should be Title once implemented
+			tBlankLine, item(Text, "Paragraph."), tBlankLine,
+			item(Text, "Title"), item(Text, "====="),
+			tBlankLine, item(Text, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -466,10 +467,10 @@ Title
 
 Paragraph.`,
 		[]Token{
-			mkItem(Text, "Duplicate implicit/explicit targets."), tBlankLine,
-			mkItem(Text, "Title"), mkItem(Text, "====="), // TODO: Should be Title once implemented
-			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "Paragraph."), tEOF,
+			item(Text, "Duplicate implicit/explicit targets."), tBlankLine,
+			item(Text, "Title"), item(Text, "====="), // TODO: Should be Title once implemented
+			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -482,10 +483,10 @@ Title
 .. target-notes::
    :name: title`,
 		[]Token{
-			mkItem(Text, "Duplicate implicit/directive targets."), tBlankLine,
-			mkItem(Text, "Title"), mkItem(Text, "====="), // TODO: Should be Title once implemented
-			tBlankLine, tComment, tSpace, mkItem(Text, "target-notes::"), // TODO: Should be Directive once implemented
-			tSpace3, mkItem(Text, ":name: title"), tEOF,
+			item(Text, "Duplicate implicit/directive targets."), tBlankLine,
+			item(Text, "Title"), item(Text, "====="), // TODO: Should be Title once implemented
+			tBlankLine, tComment, tSpace, item(Text, "target-notes::"), // TODO: Should be Directive once implemented
+			tSpace3, item(Text, ":name: title"), tEOF,
 		},
 	},
 	{
@@ -504,13 +505,13 @@ Second.
 
 Third.`,
 		[]Token{
-			mkItem(Text, "Duplicate explicit targets."), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "First."), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "Second."), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "Third."), tEOF,
+			item(Text, "Duplicate explicit targets."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "First."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "Second."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "Third."), tEOF,
 		},
 	},
 	{
@@ -526,11 +527,11 @@ First.
 
 `,
 		[]Token{
-			mkItem(Text, "Duplicate explicit/directive targets."), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "First."), tBlankLine,
-			tComment, tSpace, mkItem(Text, "rubric:: this is a title too"), // TODO: Should be Directive once implemented
-			tSpace3, mkItem(Text, ":name: title"), tBlankLine, tEOF,
+			item(Text, "Duplicate explicit/directive targets."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "First."), tBlankLine,
+			tComment, tSpace, item(Text, "rubric:: this is a title too"), // TODO: Should be Directive once implemented
+			tSpace3, item(Text, ":name: title"), tBlankLine, tEOF,
 		},
 	},
 	{
@@ -555,17 +556,17 @@ Explicit internal target.
 .. rubric:: directive with target
    :name: Target`,
 		[]Token{
-			mkItem(Text, "Duplicate targets:"), tBlankLine,
-			mkItem(Text, "Target"), mkItem(Text, "======"), // TODO: Should be Title once implemented
-			tBlankLine, mkItem(Text, "Implicit section header target."), tBlankLine,
-			tComment, tSpace, mkItem(Text, "[TARGET] Citation target."), // TODO: Should be Citation once implemented
-			tBlankLine, tComment, tSpace, mkItem(Text, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote once implemented
-			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tBlankLine, mkItem(Text, "Explicit internal target."), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "Explicit_external_target"), tBlankLine,
-			tComment, tSpace, mkItem(Text, "rubric:: directive with target"), // TODO: Should be Directive once implemented
-			tSpace3, mkItem(Text, ":name: Target"), tEOF,
+			item(Text, "Duplicate targets:"), tBlankLine,
+			item(Text, "Target"), item(Text, "======"), // TODO: Should be Title once implemented
+			tBlankLine, item(Text, "Implicit section header target."), tBlankLine,
+			tComment, tSpace, item(Text, "[TARGET] Citation target."), // TODO: Should be Citation once implemented
+			tBlankLine, tComment, tSpace, item(Text, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote once implemented
+			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tBlankLine, item(Text, "Explicit internal target."), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "Explicit_external_target"), tBlankLine,
+			tComment, tSpace, item(Text, "rubric:: directive with target"), // TODO: Should be Directive once implemented
+			tSpace3, item(Text, ":name: Target"), tEOF,
 		},
 	},
 	{
@@ -578,14 +579,14 @@ Explicit internal target.
 
 ` + ".. _`unescaped colon, quoted: `: OK",
 		[]Token{
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "unescaped colon at end"), tHyperlinkSuffix,
-			mkItem(Text, ": no good"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, ":"), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "no good either"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, `escaped colon\:`), tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "OK"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, mkItem(HyperlinkName, "unescaped colon, quoted: "),
-			tHyperlinkQuote, tHyperlinkSuffix, tSpace, mkItem(HyperlinkURI, "OK"), tEOF,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "unescaped colon at end"), tHyperlinkSuffix,
+			item(Text, ": no good"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, ":"), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "no good either"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, `escaped colon\:`), tHyperlinkSuffix,
+			tSpace, item(HyperlinkURI, "OK"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, "unescaped colon, quoted: "),
+			tHyperlinkQuote, tHyperlinkSuffix, tSpace, item(HyperlinkURI, "OK"), tEOF,
 		},
 	},
 	// anonymous targets
@@ -595,9 +596,9 @@ Explicit internal target.
 
 .. __: http://w3c.org/`,
 		[]Token{
-			mkItem(Text, "Anonymous external hyperlink target:"), tBlankLine,
+			item(Text, "Anonymous external hyperlink target:"), tBlankLine,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix,
-			tSpace, mkItem(HyperlinkURI, "http://w3c.org/"), tEOF,
+			tSpace, item(HyperlinkURI, "http://w3c.org/"), tEOF,
 		},
 	},
 	{
@@ -606,8 +607,8 @@ Explicit internal target.
 
 __ http://w3c.org/`,
 		[]Token{
-			mkItem(Text, "Anonymous external hyperlink target:"), tBlankLine,
-			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, "http://w3c.org/"), tEOF,
+			item(Text, "Anonymous external hyperlink target:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, item(HyperlinkURI, "http://w3c.org/"), tEOF,
 		},
 	},
 	{
@@ -616,9 +617,9 @@ __ http://w3c.org/`,
 
 .. __: reference_`,
 		[]Token{
-			mkItem(Text, "Anonymous indirect hyperlink target:"), tBlankLine,
+			item(Text, "Anonymous indirect hyperlink target:"), tBlankLine,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
-			mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
+			item(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
 		},
 	},
 	{
@@ -629,9 +630,9 @@ __ uri\_
 
 __ this URI ends with an underscore_`,
 		[]Token{
-			mkItem(Text, "Anonymous external hyperlink target, not indirect:"), tBlankLine,
-			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, `uri\_`), tBlankLine,
-			tAnonHyperlinkStart, tSpace, mkItem(HyperlinkURI, "this URI ends with an underscore_"), tEOF,
+			item(Text, "Anonymous external hyperlink target, not indirect:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, item(HyperlinkURI, `uri\_`), tBlankLine,
+			tAnonHyperlinkStart, tSpace, item(HyperlinkURI, "this URI ends with an underscore_"), tEOF,
 		},
 	},
 	{
@@ -641,10 +642,10 @@ __ this URI ends with an underscore_`,
 __ reference_
 ` + "__ `a very long\n   reference`_",
 		[]Token{
-			mkItem(Text, "Anonymous indirect hyperlink targets:"), tBlankLine,
-			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			tAnonHyperlinkStart, tSpace, tInlineReferenceOpen, mkItem(InlineReferenceText, "a very long"),
-			tSpace3, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose2, tEOF,
+			item(Text, "Anonymous indirect hyperlink targets:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, tInlineReferenceOpen, item(InlineReferenceText, "a very long"),
+			tSpace3, item(InlineReferenceText, "reference"), tInlineReferenceClose2, tEOF,
 		},
 	},
 	{
@@ -663,21 +664,21 @@ __ reference_
 __ reference_
 no blank line`,
 		[]Token{
-			mkItem(Text, "Mixed anonymous & named indirect hyperlink targets:"), tBlankLine,
-			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			item(Text, "Mixed anonymous & named indirect hyperlink targets:"), tBlankLine,
+			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
-			mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target1"), tHyperlinkSuffix,
-			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			mkItem(Text, "no blank line"), tBlankLine,
-			tHyperlinkStart, tSpace, tHyperlinkPrefix, mkItem(HyperlinkName, "target2"), tHyperlinkSuffix,
-			tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target1"), tHyperlinkSuffix,
+			tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			item(Text, "no blank line"), tBlankLine,
+			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target2"), tHyperlinkSuffix,
+			tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
-			mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			tAnonHyperlinkStart, tSpace, mkItem(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			mkItem(Text, "no blank line"), tEOF,
+			item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
+			item(Text, "no blank line"), tEOF,
 		},
 	},
 }

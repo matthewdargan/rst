@@ -160,12 +160,7 @@ func (l *Scanner) errorf(format string, args ...interface{}) stateFn {
 
 // New creates and returns a new scanner.
 func New(name string, r io.ByteReader) *Scanner {
-	l := &Scanner{
-		r:    r,
-		name: name,
-		line: 1,
-	}
-	return l
+	return &Scanner{r: r, name: name, line: 1}
 }
 
 // Next returns the next token.
@@ -199,15 +194,15 @@ func lexAny(l *Scanner) stateFn {
 		return lexSpace
 	case l.isComment(r):
 		return lexComment
-	case l.isHyperlinkStart(r):
+	case l.isHyperlinkStart():
 		return lexHyperlinkStart
-	case l.input[:l.pos] == hyperlinkStart:
+	case l.isHyperlinkPrefix():
 		return lexHyperlinkPrefix
 	case r == '`':
 		return lexQuote
 	case l.isHyperlinkName():
 		return lexHyperlinkName
-	case l.isHyperlinkSuffix(r):
+	case l.isHyperlinkSuffix():
 		return lexEndOfLine(l, HyperlinkSuffix)
 	case l.isHyperlinkURI():
 		return lexUntilTerminator(l, HyperlinkURI)
@@ -238,9 +233,8 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 			return l.emit(typ)
 		case '\n':
 			return lexEndOfLine(l, typ)
-		default:
-			l.next()
 		}
+		l.next()
 	}
 }
 
@@ -273,9 +267,8 @@ func lexQuote(l *Scanner) stateFn {
 		return l.emit(InlineReferenceOpen)
 	case InlineReferenceText:
 		return lexInlineReferenceClose
-	default:
-		return l.errorf("expected hyperlink or inline reference before quote")
 	}
+	return l.errorf("expected hyperlink or inline reference before quote")
 }
 
 // lexHyperlinkPrefix scans a hyperlink prefix.
@@ -335,19 +328,26 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 
 // isComment reports whether the scanner is on a comment.
 func (l *Scanner) isComment(r rune) bool {
-	return r == '.' && !strings.HasPrefix(l.input[l.start:], hyperlinkStart)
+	if r != '.' {
+		return false
+	}
+	s := l.input[l.start:]
+	return s == hyperlinkStart || !strings.HasPrefix(s, hyperlinkStart)
 }
 
 // isHyperlinkStart reports whether the scanner is on a hyperlink start.
-func (l *Scanner) isHyperlinkStart(r rune) bool {
-	switch r {
-	case '.':
-		return strings.HasPrefix(l.input[l.start:], hyperlinkStart)
-	case '_':
-		return strings.HasPrefix(l.input[l.start:], anonHyperlinkStart)
-	default:
+func (l *Scanner) isHyperlinkStart() bool {
+	s := l.input[l.start:]
+	return strings.HasPrefix(s, hyperlinkStart) || strings.HasPrefix(s, anonHyperlinkStart)
+}
+
+// isHyperlinkPrefix reports whether the scanner is on a hyperlink prefix.
+func (l *Scanner) isHyperlinkPrefix() bool {
+	switch l.peek() {
+	case '\n', eof:
 		return false
 	}
+	return l.input[:l.pos] == hyperlinkStart
 }
 
 // isHyperlinkName reports whether the scanner is on a hyperlink name.
@@ -359,41 +359,32 @@ func (l *Scanner) isHyperlinkName() bool {
 		return l.types[0] == HyperlinkPrefix
 	case Space:
 		return l.types[0] == HyperlinkName
-	default:
-		return false
 	}
+	return false
 }
 
 // isHyperlinkSuffix reports whether the scanner is on a hyperlink suffix.
-func (l *Scanner) isHyperlinkSuffix(r rune) bool {
-	if r != ':' {
-		return false
-	}
+func (l *Scanner) isHyperlinkSuffix() bool {
 	switch l.types[1] {
 	case HyperlinkPrefix, HyperlinkName:
 		return true
 	case HyperlinkQuote:
 		return l.types[0] == HyperlinkName
-	default:
-		return false
 	}
+	return false
 }
 
 // isHyperlinkURI reports whether the scanner is on a hyperlink URI.
 func (l *Scanner) isHyperlinkURI() bool {
-	if l.types[1] != Space {
-		return false
-	}
 	tr := strings.TrimSuffix(l.input[l.pos:], "\n")
 	if isUnderscoreSuffix(tr) && !strings.ContainsFunc(tr, unicode.IsSpace) {
 		return false
 	}
 	switch l.types[0] {
 	case HyperlinkStart, HyperlinkSuffix, HyperlinkURI:
-		return true
-	default:
-		return false
+		return l.types[1] == Space
 	}
+	return false
 }
 
 // isUnderscoreSuffix reports whether the string ends with an underscore.
@@ -409,14 +400,11 @@ func (l *Scanner) isInlineReferenceText() bool {
 		switch l.types[0] {
 		case HyperlinkStart, HyperlinkSuffix, InlineReferenceText:
 			return true
-		default:
-			return false
 		}
 	case InlineReferenceOpen:
 		return true
-	default:
-		return false
 	}
+	return false
 }
 
 // isInlineReferenceClose reports whether the scanner is on an inline reference close.
