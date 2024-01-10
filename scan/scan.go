@@ -307,7 +307,6 @@ func lexInlineReferenceText(l *Scanner) stateFn {
 			if l.pos >= len(l.input)-2 {
 				return l.emit(InlineReferenceText)
 			}
-			l.next()
 		case '`', eof:
 			return l.emit(InlineReferenceText)
 		case '\n':
