@@ -25,6 +25,7 @@ var (
 	tSpace                 = item(Space, " ")
 	tSpace2                = item(Space, "  ")
 	tSpace3                = item(Space, "   ")
+	tSectionAdornment      = item(SectionAdornment, "=====")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
 	tAnonHyperlinkStart    = item(HyperlinkStart, "__")
@@ -41,14 +42,14 @@ var scanTests = []scanTest{
 	{"empty", "", []Token{tEOF}},
 	{"spaces", " \t\n", []Token{item(Space, " \t\n"), tEOF}},
 	{"quote error", "`", []Token{item(Error, "expected hyperlink or inline reference before quote")}},
-	{"text", `now is the time`, []Token{item(Text, "now is the time"), tEOF}},
+	{"text", `now is the time`, []Token{item(Paragraph, "now is the time"), tEOF}},
 	// comments
 	{
 		"comment",
 		`.. A comment
 
 Paragraph.`,
-		[]Token{tComment, tSpace, item(Text, "A comment"), tBlankLine, item(Text, "Paragraph."), tEOF},
+		[]Token{tComment, tSpace, item(Paragraph, "A comment"), tBlankLine, item(Paragraph, "Paragraph."), tEOF},
 	},
 	{
 		"comment block",
@@ -57,8 +58,8 @@ Paragraph.`,
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, item(Text, "A comment"), tSpace3, item(Text, "block."),
-			tBlankLine, item(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Paragraph, "A comment"), tSpace3, item(Paragraph, "block."),
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -68,9 +69,9 @@ Paragraph.`,
    starting on the line after the
    explicit markup start.`,
 		[]Token{
-			tComment, tSpace3, item(Text, "A comment consisting of multiple lines"),
-			tSpace3, item(Text, "starting on the line after the"),
-			tSpace3, item(Text, "explicit markup start."), tEOF,
+			tComment, tSpace3, item(Paragraph, "A comment consisting of multiple lines"),
+			tSpace3, item(Paragraph, "starting on the line after the"),
+			tSpace3, item(Paragraph, "explicit markup start."), tEOF,
 		},
 	},
 	{
@@ -80,9 +81,9 @@ Paragraph.`,
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, item(Text, "A comment."),
-			tComment, tSpace, item(Text, "Another."),
-			tBlankLine, item(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Paragraph, "A comment."),
+			tComment, tSpace, item(Paragraph, "Another."),
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -92,8 +93,8 @@ no blank line
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, item(Text, "A comment"), item(Text, "no blank line"),
-			tBlankLine, item(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Paragraph, "A comment"), item(Paragraph, "no blank line"),
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -104,9 +105,9 @@ no blank line
 
 Paragraph.`,
 		[]Token{
-			tComment, tSpace, item(Text, "A comment."),
-			tComment, tSpace, item(Text, "Another."), item(Text, "no blank line"),
-			tBlankLine, item(Text, "Paragraph."), tEOF,
+			tComment, tSpace, item(Paragraph, "A comment."),
+			tComment, tSpace, item(Paragraph, "Another."), item(Paragraph, "no blank line"),
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -114,7 +115,7 @@ Paragraph.`,
 		`.. A comment::
 
 Paragraph.`,
-		[]Token{tComment, tSpace, item(Text, "A comment::"), tBlankLine, item(Text, "Paragraph."), tEOF},
+		[]Token{tComment, tSpace, item(Paragraph, "A comment::"), tBlankLine, item(Paragraph, "Paragraph."), tEOF},
 	},
 	{
 		"comment block with directive",
@@ -124,9 +125,9 @@ Paragraph.`,
 The extra newline before the comment text prevents
 the parser from recognizing a directive.`,
 		[]Token{
-			tComment, tSpace3, item(Text, "comment::"), tBlankLine,
-			item(Text, "The extra newline before the comment text prevents"),
-			item(Text, "the parser from recognizing a directive."), tEOF,
+			tComment, tSpace3, item(Paragraph, "comment::"), tBlankLine,
+			item(Paragraph, "The extra newline before the comment text prevents"),
+			item(Paragraph, "the parser from recognizing a directive."), tEOF,
 		},
 	},
 	{
@@ -137,9 +138,9 @@ the parser from recognizing a directive.`,
 The extra newline before the comment text prevents
 the parser from recognizing a hyperlink target.`,
 		[]Token{
-			tComment, tSpace3, item(Text, "_comment: http://example.org"), tBlankLine,
-			item(Text, "The extra newline before the comment text prevents"),
-			item(Text, "the parser from recognizing a hyperlink target."), tEOF,
+			tComment, tSpace3, item(Paragraph, "_comment: http://example.org"), tBlankLine,
+			item(Paragraph, "The extra newline before the comment text prevents"),
+			item(Paragraph, "the parser from recognizing a hyperlink target."), tEOF,
 		},
 	},
 	{
@@ -150,9 +151,9 @@ the parser from recognizing a hyperlink target.`,
 The extra newline before the comment text prevents
 the parser from recognizing a citation.`,
 		[]Token{
-			tComment, tSpace3, item(Text, "[comment] Not a citation."), tBlankLine,
-			item(Text, "The extra newline before the comment text prevents"),
-			item(Text, "the parser from recognizing a citation."), tEOF,
+			tComment, tSpace3, item(Paragraph, "[comment] Not a citation."), tBlankLine,
+			item(Paragraph, "The extra newline before the comment text prevents"),
+			item(Paragraph, "the parser from recognizing a citation."), tEOF,
 		},
 	},
 	{
@@ -163,9 +164,9 @@ the parser from recognizing a citation.`,
 The extra newline before the comment text prevents
 the parser from recognizing a substitution definition.`,
 		[]Token{
-			tComment, tSpace3, item(Text, "|comment| image:: bogus.png"), tBlankLine,
-			item(Text, "The extra newline before the comment text prevents"),
-			item(Text, "the parser from recognizing a substitution definition."), tEOF,
+			tComment, tSpace3, item(Paragraph, "|comment| image:: bogus.png"), tBlankLine,
+			item(Paragraph, "The extra newline before the comment text prevents"),
+			item(Paragraph, "the parser from recognizing a substitution definition."), tEOF,
 		},
 	},
 	{
@@ -177,10 +178,10 @@ the parser from recognizing a substitution definition.`,
 
     A block quote.`,
 		[]Token{
-			tComment, tSpace, item(Text, "Next is an empty comment, which serves to end this comment and"),
-			tSpace3, item(Text, "prevents the following block quote being swallowed up."),
+			tComment, tSpace, item(Paragraph, "Next is an empty comment, which serves to end this comment and"),
+			tSpace3, item(Paragraph, "prevents the following block quote being swallowed up."),
 			tBlankLine, tComment, tBlankLine, item(Space, "    "),
-			item(Text, "A block quote."), // TODO: Should be BlockQuote once implemented
+			item(Paragraph, "A block quote."), // TODO: Should be BlockQuote once implemented
 			tEOF,
 		},
 	},
@@ -194,10 +195,10 @@ the parser from recognizing a substitution definition.`,
 term 2
   definition 2`,
 		[]Token{
-			item(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
-			tSpace2, item(Text, "definition 1"), tBlankLine,
-			tSpace2, tComment, tSpace, item(Text, "a comment"), tBlankLine,
-			item(Text, "term 2"), tSpace2, item(Text, "definition 2"), tEOF,
+			item(Paragraph, "term 1"), // TODO: Should be DefinitionTerm once implemented
+			tSpace2, item(Paragraph, "definition 1"), tBlankLine,
+			tSpace2, tComment, tSpace, item(Paragraph, "a comment"), tBlankLine,
+			item(Paragraph, "term 2"), tSpace2, item(Paragraph, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -210,10 +211,10 @@ term 2
 term 2
   definition 2`,
 		[]Token{
-			item(Text, "term 1"), // TODO: Should be DefinitionTerm once implemented
-			tSpace2, item(Text, "definition 1"), tBlankLine,
-			tComment, tSpace, item(Text, "a comment"), tBlankLine,
-			item(Text, "term 2"), tSpace2, item(Text, "definition 2"), tEOF,
+			item(Paragraph, "term 1"), // TODO: Should be DefinitionTerm once implemented
+			tSpace2, item(Paragraph, "definition 1"), tBlankLine,
+			tComment, tSpace, item(Paragraph, "a comment"), tBlankLine,
+			item(Paragraph, "term 2"), tSpace2, item(Paragraph, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -226,10 +227,10 @@ term 2
 
   bullet paragraph 3`,
 		[]Token{
-			item(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2, item(Text, "bullet paragraph 2"), tBlankLine,
-			tSpace2, tComment, tSpace, item(Text, "comment between bullet paragraphs 2 and 3"),
-			tBlankLine, tSpace2, item(Text, "bullet paragraph 3"), tEOF,
+			item(Paragraph, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
+			tBlankLine, tSpace2, item(Paragraph, "bullet paragraph 2"), tBlankLine,
+			tSpace2, tComment, tSpace, item(Paragraph, "comment between bullet paragraphs 2 and 3"),
+			tBlankLine, tSpace2, item(Paragraph, "bullet paragraph 3"), tEOF,
 		},
 	},
 	{
@@ -240,10 +241,10 @@ term 2
 
   bullet paragraph 2`,
 		[]Token{
-			item(Text, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
+			item(Paragraph, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
 			tBlankLine, tSpace2,
-			tComment, tSpace, item(Text, "comment between bullet paragraphs 1 (leader) and 2"),
-			tBlankLine, tSpace2, item(Text, "bullet paragraph 2"), tEOF,
+			tComment, tSpace, item(Paragraph, "comment between bullet paragraphs 1 (leader) and 2"),
+			tBlankLine, tSpace2, item(Paragraph, "bullet paragraph 2"), tEOF,
 		},
 	},
 	{
@@ -252,11 +253,11 @@ term 2
 
   .. trailing comment`,
 		[]Token{
-			item(Text, "+ bullet"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2, tComment, tSpace, item(Text, "trailing comment"), tEOF,
+			item(Paragraph, "+ bullet"), // TODO: Should be Bullet once implemented
+			tBlankLine, tSpace2, tComment, tSpace, item(Paragraph, "trailing comment"), tEOF,
 		},
 	},
-	{"comment, not target", ".. _", []Token{tComment, tSpace, item(Text, "_"), tEOF}},
+	{"comment, not target", ".. _", []Token{tComment, tSpace, item(Paragraph, "_"), tEOF}},
 	// targets
 	{
 		"hyperlink target",
@@ -266,7 +267,7 @@ term 2
 		[]Token{
 			tHyperlinkStart, tSpace, tHyperlinkPrefix,
 			item(HyperlinkName, "target"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "(Internal hyperlink target.)"), tEOF,
+			tBlankLine, item(Paragraph, "(Internal hyperlink target.)"), tEOF,
 		},
 	},
 	{
@@ -295,7 +296,7 @@ term 2
 
 .. _not-indirect: uri\_`,
 		[]Token{
-			item(Text, "External hyperlink targets:"), tBlankLine,
+			item(Paragraph, "External hyperlink targets:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "one-liner"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "http://structuredtext.sourceforge.net"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "starts-on-this-line"), tHyperlinkSuffix,
@@ -317,7 +318,7 @@ term 2
 
 ` + ".. _target2: `phrase-link reference`_",
 		[]Token{
-			item(Text, "Indirect hyperlink targets:"), tBlankLine,
+			item(Paragraph, "Indirect hyperlink targets:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target1"), tHyperlinkSuffix,
 			tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1, tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target2"), tHyperlinkSuffix,
@@ -366,7 +367,7 @@ term 2
 
 .. _target: http://www.python.org/`,
 		[]Token{
-			item(Text, "External hyperlink:"), tBlankLine,
+			item(Paragraph, "External hyperlink:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "http://www.python.org/"), tEOF,
 		},
@@ -394,10 +395,10 @@ Target beginning with an underscore:
 
 ` + ".. _`_target`: OK",
 		[]Token{
-			item(Text, "Malformed target:"), tBlankLine,
+			item(Paragraph, "Malformed target:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "_malformed"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "no good"), tBlankLine,
-			item(Text, "Target beginning with an underscore:"), tBlankLine,
+			item(Paragraph, "Target beginning with an underscore:"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, tHyperlinkQuote, item(HyperlinkName, "_target"), tHyperlinkQuote, tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "OK"), tEOF,
 		},
@@ -410,7 +411,7 @@ Target beginning with an underscore:
 
 .. _target: second`,
 		[]Token{
-			item(Text, "Duplicate external targets (different URIs):"), tBlankLine,
+			item(Paragraph, "Duplicate external targets (different URIs):"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "first"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
@@ -425,7 +426,7 @@ Target beginning with an underscore:
 
 .. _target: first`,
 		[]Token{
-			item(Text, "Duplicate external targets (same URIs):"), tBlankLine,
+			item(Paragraph, "Duplicate external targets (same URIs):"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "first"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
@@ -446,11 +447,11 @@ Title
 
 Paragraph.`,
 		[]Token{
-			item(Text, "Duplicate implicit targets."), tBlankLine,
-			item(Text, "Title"), item(Text, "====="), // TODO: Should be Title once implemented
-			tBlankLine, item(Text, "Paragraph."), tBlankLine,
-			item(Text, "Title"), item(Text, "====="),
-			tBlankLine, item(Text, "Paragraph."), tEOF,
+			item(Paragraph, "Duplicate implicit targets."), tBlankLine,
+			item(Title, "Title"), tSectionAdornment,
+			tBlankLine, item(Paragraph, "Paragraph."), tBlankLine,
+			item(Title, "Title"), tSectionAdornment,
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -464,10 +465,10 @@ Title
 
 Paragraph.`,
 		[]Token{
-			item(Text, "Duplicate implicit/explicit targets."), tBlankLine,
-			item(Text, "Title"), item(Text, "====="), // TODO: Should be Title once implemented
+			item(Paragraph, "Duplicate implicit/explicit targets."), tBlankLine,
+			item(Title, "Title"), tSectionAdornment,
 			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "Paragraph."), tEOF,
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 	{
@@ -480,10 +481,10 @@ Title
 .. target-notes::
    :name: title`,
 		[]Token{
-			item(Text, "Duplicate implicit/directive targets."), tBlankLine,
-			item(Text, "Title"), item(Text, "====="), // TODO: Should be Title once implemented
-			tBlankLine, tComment, tSpace, item(Text, "target-notes::"), // TODO: Should be Directive once implemented
-			tSpace3, item(Text, ":name: title"), tEOF,
+			item(Paragraph, "Duplicate implicit/directive targets."), tBlankLine,
+			item(Title, "Title"), tSectionAdornment,
+			tBlankLine, tComment, tSpace, item(Paragraph, "target-notes::"), // TODO: Should be Directive once implemented
+			tSpace3, item(Paragraph, ":name: title"), tEOF,
 		},
 	},
 	{
@@ -502,13 +503,13 @@ Second.
 
 Third.`,
 		[]Token{
-			item(Text, "Duplicate explicit targets."), tBlankLine,
+			item(Paragraph, "Duplicate explicit targets."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "First."), tBlankLine,
+			tBlankLine, item(Paragraph, "First."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "Second."), tBlankLine,
+			tBlankLine, item(Paragraph, "Second."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "Third."), tEOF,
+			tBlankLine, item(Paragraph, "Third."), tEOF,
 		},
 	},
 	{
@@ -524,11 +525,11 @@ First.
 
 `,
 		[]Token{
-			item(Text, "Duplicate explicit/directive targets."), tBlankLine,
+			item(Paragraph, "Duplicate explicit/directive targets."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "First."), tBlankLine,
-			tComment, tSpace, item(Text, "rubric:: this is a title too"), // TODO: Should be Directive once implemented
-			tSpace3, item(Text, ":name: title"), tBlankLine, tEOF,
+			tBlankLine, item(Paragraph, "First."), tBlankLine,
+			tComment, tSpace, item(Paragraph, "rubric:: this is a title too"), // TODO: Should be Directive once implemented
+			tSpace3, item(Paragraph, ":name: title"), tBlankLine, tEOF,
 		},
 	},
 	{
@@ -553,17 +554,17 @@ Explicit internal target.
 .. rubric:: directive with target
    :name: Target`,
 		[]Token{
-			item(Text, "Duplicate targets:"), tBlankLine,
-			item(Text, "Target"), item(Text, "======"), // TODO: Should be Title once implemented
-			tBlankLine, item(Text, "Implicit section header target."), tBlankLine,
-			tComment, tSpace, item(Text, "[TARGET] Citation target."), // TODO: Should be Citation once implemented
-			tBlankLine, tComment, tSpace, item(Text, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote once implemented
+			item(Paragraph, "Duplicate targets:"), tBlankLine,
+			item(Title, "Target"), item(SectionAdornment, "======"),
+			tBlankLine, item(Paragraph, "Implicit section header target."), tBlankLine,
+			tComment, tSpace, item(Paragraph, "[TARGET] Citation target."), // TODO: Should be Citation once implemented
+			tBlankLine, tComment, tSpace, item(Paragraph, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote once implemented
 			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
-			tBlankLine, item(Text, "Explicit internal target."), tBlankLine,
+			tBlankLine, item(Paragraph, "Explicit internal target."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "Explicit_external_target"), tBlankLine,
-			tComment, tSpace, item(Text, "rubric:: directive with target"), // TODO: Should be Directive once implemented
-			tSpace3, item(Text, ":name: Target"), tEOF,
+			tComment, tSpace, item(Paragraph, "rubric:: directive with target"), // TODO: Should be Directive once implemented
+			tSpace3, item(Paragraph, ":name: Target"), tEOF,
 		},
 	},
 	{
@@ -577,7 +578,7 @@ Explicit internal target.
 ` + ".. _`unescaped colon, quoted: `: OK",
 		[]Token{
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "unescaped colon at end"), tHyperlinkSuffix,
-			item(Text, ": no good"), tBlankLine,
+			item(Paragraph, ": no good"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, ":"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "no good either"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, `escaped colon\:`), tHyperlinkSuffix,
@@ -593,7 +594,7 @@ Explicit internal target.
 
 .. __: http://w3c.org/`,
 		[]Token{
-			item(Text, "Anonymous external hyperlink target:"), tBlankLine,
+			item(Paragraph, "Anonymous external hyperlink target:"), tBlankLine,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "http://w3c.org/"), tEOF,
 		},
@@ -604,7 +605,7 @@ Explicit internal target.
 
 __ http://w3c.org/`,
 		[]Token{
-			item(Text, "Anonymous external hyperlink target:"), tBlankLine,
+			item(Paragraph, "Anonymous external hyperlink target:"), tBlankLine,
 			tAnonHyperlinkStart, tSpace, item(HyperlinkURI, "http://w3c.org/"), tEOF,
 		},
 	},
@@ -614,7 +615,7 @@ __ http://w3c.org/`,
 
 .. __: reference_`,
 		[]Token{
-			item(Text, "Anonymous indirect hyperlink target:"), tBlankLine,
+			item(Paragraph, "Anonymous indirect hyperlink target:"), tBlankLine,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
 			item(InlineReferenceText, "reference"), tInlineReferenceClose1, tEOF,
 		},
@@ -627,7 +628,7 @@ __ uri\_
 
 __ this URI ends with an underscore_`,
 		[]Token{
-			item(Text, "Anonymous external hyperlink target, not indirect:"), tBlankLine,
+			item(Paragraph, "Anonymous external hyperlink target, not indirect:"), tBlankLine,
 			tAnonHyperlinkStart, tSpace, item(HyperlinkURI, `uri\_`), tBlankLine,
 			tAnonHyperlinkStart, tSpace, item(HyperlinkURI, "this URI ends with an underscore_"), tEOF,
 		},
@@ -639,7 +640,7 @@ __ this URI ends with an underscore_`,
 __ reference_
 ` + "__ `a very long\n   reference`_",
 		[]Token{
-			item(Text, "Anonymous indirect hyperlink targets:"), tBlankLine,
+			item(Paragraph, "Anonymous indirect hyperlink targets:"), tBlankLine,
 			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tAnonHyperlinkStart, tSpace, tInlineReferenceOpen, item(InlineReferenceText, "a very long"),
 			tSpace3, item(InlineReferenceText, "reference"), tInlineReferenceClose2, tEOF,
@@ -661,38 +662,38 @@ __ reference_
 __ reference_
 no blank line`,
 		[]Token{
-			item(Text, "Mixed anonymous & named indirect hyperlink targets:"), tBlankLine,
+			item(Paragraph, "Mixed anonymous & named indirect hyperlink targets:"), tBlankLine,
 			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
 			item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target1"), tHyperlinkSuffix,
 			tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			item(Text, "no blank line"), tBlankLine,
+			item(Paragraph, "no blank line"), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target2"), tHyperlinkSuffix,
 			tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tHyperlinkStart, tSpace, tAnonHyperlinkPrefix, tHyperlinkSuffix, tSpace,
 			item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
-			item(Text, "no blank line"), tEOF,
+			item(Paragraph, "no blank line"), tEOF,
 		},
 	},
 	// paragraphs
-	{"paragraph", "A paragraph.", []Token{item(Text, "A paragraph."), tEOF}},
+	{"paragraph", "A paragraph.", []Token{item(Paragraph, "A paragraph."), tEOF}},
 	{
 		"2 paragraphs",
 		`Paragraph 1.
 
 Paragraph 2.`,
-		[]Token{item(Text, "Paragraph 1."), tBlankLine, item(Text, "Paragraph 2."), tEOF},
+		[]Token{item(Paragraph, "Paragraph 1."), tBlankLine, item(Paragraph, "Paragraph 2."), tEOF},
 	},
 	{
 		"paragraph with 3 lines",
 		`Line 1.
 Line 2.
 Line 3.`,
-		[]Token{item(Text, "Line 1."), item(Text, "Line 2."), item(Text, "Line 3."), tEOF},
+		[]Token{item(Paragraph, "Line 1."), item(Paragraph, "Line 2."), item(Paragraph, "Line 3."), tEOF},
 	},
 	{
 		"2 paragraphs with 3 lines",
@@ -704,15 +705,44 @@ Paragraph 2, Line 1.
 Line 2.
 Line 3.`,
 		[]Token{
-			item(Text, "Paragraph 1, Line 1."), item(Text, "Line 2."), item(Text, "Line 3."), tBlankLine,
-			item(Text, "Paragraph 2, Line 1."), item(Text, "Line 2."), item(Text, "Line 3."), tEOF,
+			item(Paragraph, "Paragraph 1, Line 1."), item(Paragraph, "Line 2."), item(Paragraph, "Line 3."), tBlankLine,
+			item(Paragraph, "Paragraph 2, Line 1."), item(Paragraph, "Line 2."), item(Paragraph, "Line 3."), tEOF,
 		},
 	},
 	{
 		"paragraph with line break",
 		`A. Einstein was a really
 smart dude.`,
-		[]Token{item(Text, "A. Einstein was a really"), item(Text, "smart dude."), tEOF},
+		[]Token{item(Paragraph, "A. Einstein was a really"), item(Paragraph, "smart dude."), tEOF},
+	},
+	//  section headers
+	{
+		"title",
+		`Title
+=====
+
+Paragraph.`,
+		[]Token{item(Title, "Title"), tSectionAdornment, tBlankLine, item(Paragraph, "Paragraph."), tEOF},
+	},
+	{
+		"title, no line break",
+		`Title
+=====
+Paragraph (no blank line).`,
+		[]Token{item(Title, "Title"), tSectionAdornment, item(Paragraph, "Paragraph (no blank line)."), tEOF},
+	},
+	{
+		"paragraph, title, paragraph",
+		`Paragraph.
+
+Title
+=====
+
+Paragraph.`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine, item(Title, "Title"), tSectionAdornment, tBlankLine,
+			item(Paragraph, "Paragraph."), tEOF,
+		},
 	},
 }
 

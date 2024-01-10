@@ -29,17 +29,19 @@ const (
 	EOF                  Type = iota // EOF indicates an end-of-file character
 	Error                            // Error occurred; value is text of error
 	BlankLine                        // BlankLine separates elements
-	Space                            // Space indicates a run of whitespace
-	Text                             // Text indicates plaintext
+	Space                            // Space indents elements
+	Paragraph                        // Paragraph is left-aligned text with no markup
+	Title                            // Title identifies a section
+	SectionAdornment                 // SectionAdornment underlines or overlines a title
 	Comment                          // Comment marker
 	HyperlinkStart                   // HyperlinkStart starts a hyperlink target
 	HyperlinkPrefix                  // HyperlinkPrefix prefixes a hyperlink target name
 	HyperlinkQuote                   // HyperlinkQuote encloses a hyperlink target name that contains any colons
-	HyperlinkName                    // HyperlinkName indicates a hyperlink target name
-	HyperlinkSuffix                  // HyperlinkSuffix suffixes hyperlink target name
-	HyperlinkURI                     // HyperlinkURI points to a hyperlink target
+	HyperlinkName                    // HyperlinkName identifies a hyperlink target for cross-referencing
+	HyperlinkSuffix                  // HyperlinkSuffix suffixes a hyperlink target name
+	HyperlinkURI                     // HyperlinkURI is the URI a hyperlink target points to
 	InlineReferenceOpen              // InlineReferenceOpen opens an inline reference
-	InlineReferenceText              // InlineReferenceText indicates text referenced inline
+	InlineReferenceText              // InlineReferenceText is reference text a hyperlink target points to
 	InlineReferenceClose             // InlineReferenceClose closes an inline reference
 )
 
@@ -181,6 +183,7 @@ const (
 	hyperlinkStart      = ".. _"
 	anonHyperlinkStart  = "__ "
 	anonHyperlinkPrefix = "__:"
+	adornments          = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 )
 
 // lexAny scans non-space items.
@@ -210,8 +213,12 @@ func lexAny(l *Scanner) stateFn {
 		return lexInlineReferenceText
 	case l.isInlineReferenceClose():
 		return lexInlineReferenceClose
+	case l.isTitle():
+		return lexUntilTerminator(l, Title)
+	case l.isSectionAdornment():
+		return lexUntilTerminator(l, SectionAdornment)
 	default:
-		return lexUntilTerminator(l, Text)
+		return lexUntilTerminator(l, Paragraph)
 	}
 }
 
@@ -409,4 +416,38 @@ func (l *Scanner) isInlineReferenceText() bool {
 // isInlineReferenceClose reports whether the scanner is on an inline reference close.
 func (l *Scanner) isInlineReferenceClose() bool {
 	return l.types[1] == InlineReferenceText
+}
+
+// isTitle reports whether the scanner is on a title.
+func (l *Scanner) isTitle() bool {
+	pos := l.pos
+	lastWidth := l.lastWidth
+	i := strings.IndexRune(l.input[l.pos:], '\n') + 1
+	if i < 1 {
+		return false
+	}
+	l.pos += i
+	r := l.next()
+	isSectionAdornment := l.isSectionAdornmentNext(r, i)
+	l.pos = pos
+	l.lastWidth = lastWidth
+	return isSectionAdornment
+}
+
+// isSectionAdornmentNext reports whether the next line to scan is a section adornment.
+func (l *Scanner) isSectionAdornmentNext(r rune, titleLen int) bool {
+	if !strings.ContainsRune(adornments, r) {
+		return false
+	}
+	i := strings.IndexRune(l.input[l.pos:], '\n')
+	section := l.input[l.pos-1 : l.pos+i]
+	if section != strings.Repeat(string(r), len(section)) {
+		return false
+	}
+	return len(section) >= titleLen
+}
+
+// isSectionAdornment reports whether the scanner is on a section adornment.
+func (l *Scanner) isSectionAdornment() bool {
+	return l.types[1] == Title
 }
