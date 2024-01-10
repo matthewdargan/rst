@@ -44,7 +44,7 @@ var scanTests = []scanTest{
 	{"text", `now is the time`, []Token{item(Text, "now is the time"), tEOF}},
 	// comments
 	{
-		"line comment",
+		"comment",
 		`.. A comment
 
 Paragraph.`,
@@ -74,7 +74,7 @@ Paragraph.`,
 		},
 	},
 	{
-		"2 line comments",
+		"2 comments",
 		`.. A comment.
 .. Another.
 
@@ -86,7 +86,7 @@ Paragraph.`,
 		},
 	},
 	{
-		"line comment, no blank line",
+		"comment, no blank line",
 		`.. A comment
 no blank line
 
@@ -97,7 +97,7 @@ Paragraph.`,
 		},
 	},
 	{
-		"2 line comments, no blank line",
+		"2 comments, no blank line",
 		`.. A comment.
 .. Another.
 no blank line
@@ -110,7 +110,7 @@ Paragraph.`,
 		},
 	},
 	{
-		"line comment with directive",
+		"comment with directive",
 		`.. A comment::
 
 Paragraph.`,
@@ -256,10 +256,7 @@ term 2
 			tBlankLine, tSpace2, tComment, tSpace, item(Text, "trailing comment"), tEOF,
 		},
 	},
-	{
-		"comment, not target", ".. _",
-		[]Token{tComment, tSpace, item(Text, "_"), tEOF},
-	},
+	{"comment, not target", ".. _", []Token{tComment, tSpace, item(Text, "_"), tEOF}},
 	// targets
 	{
 		"hyperlink target",
@@ -680,6 +677,42 @@ no blank line`,
 			tAnonHyperlinkStart, tSpace, item(InlineReferenceText, "reference"), tInlineReferenceClose1,
 			item(Text, "no blank line"), tEOF,
 		},
+	},
+	// paragraphs
+	{"paragraph", "A paragraph.", []Token{item(Text, "A paragraph."), tEOF}},
+	{
+		"2 paragraphs",
+		`Paragraph 1.
+
+Paragraph 2.`,
+		[]Token{item(Text, "Paragraph 1."), tBlankLine, item(Text, "Paragraph 2."), tEOF},
+	},
+	{
+		"paragraph with 3 lines",
+		`Line 1.
+Line 2.
+Line 3.`,
+		[]Token{item(Text, "Line 1."), item(Text, "Line 2."), item(Text, "Line 3."), tEOF},
+	},
+	{
+		"2 paragraphs with 3 lines",
+		`Paragraph 1, Line 1.
+Line 2.
+Line 3.
+
+Paragraph 2, Line 1.
+Line 2.
+Line 3.`,
+		[]Token{
+			item(Text, "Paragraph 1, Line 1."), item(Text, "Line 2."), item(Text, "Line 3."), tBlankLine,
+			item(Text, "Paragraph 2, Line 1."), item(Text, "Line 2."), item(Text, "Line 3."), tEOF,
+		},
+	},
+	{
+		"paragraph with line break",
+		`A. Einstein was a really
+smart dude.`,
+		[]Token{item(Text, "A. Einstein was a really"), item(Text, "smart dude."), tEOF},
 	},
 }
 
