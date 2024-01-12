@@ -25,7 +25,9 @@ var (
 	tSpace                 = item(Space, " ")
 	tSpace2                = item(Space, "  ")
 	tSpace3                = item(Space, "   ")
+	tSpace4                = item(Space, "    ")
 	tSectionAdornment      = item(SectionAdornment, "=====")
+	tSectionAdornmentDash  = item(SectionAdornment, "-----")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
 	tAnonHyperlinkStart    = item(HyperlinkStart, "__")
@@ -180,7 +182,7 @@ the parser from recognizing a substitution definition.`,
 		[]Token{
 			tComment, tSpace, item(Paragraph, "Next is an empty comment, which serves to end this comment and"),
 			tSpace3, item(Paragraph, "prevents the following block quote being swallowed up."),
-			tBlankLine, tComment, tBlankLine, item(Space, "    "),
+			tBlankLine, tComment, tBlankLine, tSpace4,
 			item(Paragraph, "A block quote."), // TODO: Should be BlockQuote once implemented
 			tEOF,
 		},
@@ -742,6 +744,25 @@ Paragraph.`,
 		[]Token{
 			item(Paragraph, "Paragraph."), tBlankLine, item(Title, "Title"), tSectionAdornment, tBlankLine,
 			item(Paragraph, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"unexpected section titles",
+		`Test unexpected section titles.
+
+    Title
+    =====
+    Paragraph.
+
+    -----
+    Title
+    -----
+    Paragraph.`,
+		[]Token{
+			item(Paragraph, "Test unexpected section titles."), tBlankLine, tSpace4, item(Title, "Title"),
+			tSpace4, tSectionAdornment, tSpace4, item(Paragraph, "Paragraph."), tBlankLine,
+			tSpace4, tSectionAdornmentDash, tSpace4, item(Title, "Title"), tSpace4, tSectionAdornmentDash,
+			tSpace4, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 }
