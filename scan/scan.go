@@ -195,6 +195,8 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(BlankLine)
 	case unicode.IsSpace(r):
 		return lexSpace
+	case l.isSectionAdornment(r):
+		return lexUntilTerminator(l, SectionAdornment)
 	case l.isComment(r):
 		return lexComment
 	case l.isHyperlinkStart():
@@ -215,8 +217,6 @@ func lexAny(l *Scanner) stateFn {
 		return lexInlineReferenceClose
 	case l.isTitle():
 		return lexUntilTerminator(l, Title)
-	case l.isSectionAdornment(r):
-		return lexUntilTerminator(l, SectionAdornment)
 	default:
 		return lexUntilTerminator(l, Paragraph)
 	}
@@ -311,7 +311,7 @@ func lexInlineReferenceText(l *Scanner) stateFn {
 	for {
 		switch l.peek() {
 		case '_':
-			if l.pos >= len(l.input)-2 {
+			if l.pos > len(l.input)-3 {
 				return l.emit(InlineReferenceText)
 			}
 		case '`', eof:
@@ -420,37 +420,26 @@ func (l *Scanner) isInlineReferenceClose() bool {
 
 // isTitle reports whether the scanner is on a title.
 func (l *Scanner) isTitle() bool {
-	pos := l.pos
-	lastWidth := l.lastWidth
-	for {
-		if r := l.next(); r == eof || r == '\n' {
-			break
+	pos, lastWidth := l.pos, l.lastWidth
+	defer func() {
+		l.pos, l.lastWidth = pos, lastWidth
+	}()
+	r := l.next()
+	for r != eof && r != '\n' {
+		r = l.next()
+	}
+	r = l.next()
+	if unicode.IsSpace(r) {
+		if i := strings.IndexFunc(l.input[l.pos:], notSpace); i > 0 {
+			l.pos += i
+			r = l.next()
 		}
 	}
-	isSectionAdornment := l.isSectionAdornmentNext(l.next())
-	l.pos = pos
-	l.lastWidth = lastWidth
-	return isSectionAdornment
+	return l.isSectionAdornment(r)
 }
 
-// isSectionAdornmentNext reports whether the next line to scan is a section adornment.
-func (l *Scanner) isSectionAdornmentNext(r rune) bool {
-	if unicode.IsSpace(r) {
-		nonSpaceIndex := strings.IndexFunc(l.input[l.pos:], func(c rune) bool {
-			return !unicode.IsSpace(c)
-		})
-		if nonSpaceIndex == -1 {
-			return false
-		}
-		l.pos += nonSpaceIndex + 1
-		r, _ = utf8.DecodeRuneInString(l.input[l.pos:])
-	}
-	if !strings.ContainsRune(adornments, r) {
-		return false
-	}
-	i := strings.IndexRune(l.input[l.pos:], '\n')
-	section := l.input[l.pos-1 : l.pos+i]
-	return section == strings.Repeat(string(r), len(section))
+func notSpace(c rune) bool {
+	return !unicode.IsSpace(c)
 }
 
 // isSectionAdornment reports whether the scanner is on a section adornment.
@@ -458,9 +447,13 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	if l.types[1] == Title || (l.types[1] == Space && l.types[0] == Title) {
 		return true
 	}
-	i := strings.IndexRune(l.input[l.pos:], '\n')
-	if i < 0 {
+	if !strings.ContainsRune(adornments, r) {
 		return false
 	}
-	return l.isSectionAdornmentNext(r)
+	i := strings.IndexRune(l.input[l.pos:], '\n')
+	section := l.input[l.pos:]
+	if i > 0 {
+		section = section[:i]
+	}
+	return len(section) > 1 && section == strings.Repeat(string(r), len(section))
 }

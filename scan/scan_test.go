@@ -28,7 +28,10 @@ var (
 	tSpace4                = item(Space, "    ")
 	tSectionAdornment5     = item(SectionAdornment, "=====")
 	tSectionAdornment7     = item(SectionAdornment, "=======")
-	tSectionAdornmentDash  = item(SectionAdornment, "-----")
+	tSectionAdornment24    = item(SectionAdornment, "========================")
+	tSectionAdornmentDash5 = item(SectionAdornment, "-----")
+	tSectionAdornmentDash7 = item(SectionAdornment, "-------")
+	tSectionAdornmentTick7 = item(SectionAdornment, "```````")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
 	tAnonHyperlinkStart    = item(HyperlinkStart, "__")
@@ -762,7 +765,7 @@ Paragraph.`,
 		[]Token{
 			item(Paragraph, "Test unexpected section titles."), tBlankLine, tSpace4, item(Title, "Title"),
 			tSpace4, tSectionAdornment5, tSpace4, item(Paragraph, "Paragraph."), tBlankLine,
-			tSpace4, tSectionAdornmentDash, tSpace4, item(Title, "Title"), tSpace4, tSectionAdornmentDash,
+			tSpace4, tSectionAdornmentDash5, tSpace4, item(Title, "Title"), tSpace4, tSectionAdornmentDash5,
 			tSpace4, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
@@ -804,10 +807,7 @@ Test overline title.`,
 		"title, missing underline",
 		`========================
  Test Missing Underline`,
-		[]Token{
-			item(SectionAdornment, "========================"), tSpace,
-			item(Paragraph, "Test Missing Underline"), tEOF,
-		},
+		[]Token{tSectionAdornment24, tSpace, item(Paragraph, "Test Missing Underline"), tEOF},
 	},
 	{
 		"title, missing underline, blank line",
@@ -815,10 +815,7 @@ Test overline title.`,
  Test Missing Underline
 
 `,
-		[]Token{
-			item(SectionAdornment, "========================"), tSpace,
-			item(Paragraph, "Test Missing Underline"), tBlankLine, tEOF,
-		},
+		[]Token{tSectionAdornment24, tSpace, item(Paragraph, "Test Missing Underline"), tBlankLine, tEOF},
 	},
 	{
 		"title, missing underline, paragraph",
@@ -851,9 +848,230 @@ Test long title and space normalization.`,
 
 Paragraph.`,
 		[]Token{
-			tSectionAdornment7, tSpace, item(Title, "Title"), item(SectionAdornment, "-------"),
+			tSectionAdornment7, tSpace, item(Title, "Title"), tSectionAdornmentDash7,
 			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
+	},
+	{
+		"missing titles, blank line in-between",
+		`========================
+
+========================
+
+Test missing titles; blank line in-between.
+
+========================
+
+========================`,
+		[]Token{
+			tSectionAdornment24, // TODO: Should be Transition once implemented
+			tBlankLine, tSectionAdornment24, tBlankLine,
+			item(Paragraph, "Test missing titles; blank line in-between."), tBlankLine,
+			tSectionAdornment24, tBlankLine, tSectionAdornment24, tEOF,
+		},
+	},
+	{
+		"missing titles",
+		`========================
+========================
+
+Test missing titles; nothing in-between.
+
+========================
+========================`,
+		[]Token{
+			tSectionAdornment24, tSectionAdornment24, tBlankLine,
+			item(Paragraph, "Test missing titles; nothing in-between."), tBlankLine,
+			tSectionAdornment24, tSectionAdornment24, tEOF,
+		},
+	},
+	{
+		"highest-level section (Title 3)",
+		`.. Test return to existing, highest-level section (Title 3).
+
+Title 1
+=======
+Paragraph 1.
+
+Title 2
+-------
+Paragraph 2.
+
+Title 3
+=======
+Paragraph 3.
+
+Title 4
+-------
+Paragraph 4.`,
+		[]Token{
+			tComment, tSpace, item(Paragraph, "Test return to existing, highest-level section (Title 3)."), tBlankLine,
+			item(Title, "Title 1"), tSectionAdornment7, item(Paragraph, "Paragraph 1."), tBlankLine,
+			item(Title, "Title 2"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 2."), tBlankLine,
+			item(Title, "Title 3"), tSectionAdornment7, item(Paragraph, "Paragraph 3."), tBlankLine,
+			item(Title, "Title 4"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 4."), tEOF,
+		},
+	},
+	{
+		"highest-level section (Title 3, with overlines)",
+		`Test return to existing, highest-level section (Title 3, with overlines).
+
+=======
+Title 1
+=======
+Paragraph 1.
+
+-------
+Title 2
+-------
+Paragraph 2.
+
+=======
+Title 3
+=======
+Paragraph 3.
+
+-------
+Title 4
+-------
+Paragraph 4.`,
+		[]Token{
+			item(Paragraph, "Test return to existing, highest-level section (Title 3, with overlines)."), tBlankLine,
+			tSectionAdornment7, item(Title, "Title 1"), tSectionAdornment7, item(Paragraph, "Paragraph 1."), tBlankLine,
+			tSectionAdornmentDash7, item(Title, "Title 2"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 2."), tBlankLine,
+			tSectionAdornment7, item(Title, "Title 3"), tSectionAdornment7, item(Paragraph, "Paragraph 3."), tBlankLine,
+			tSectionAdornmentDash7, item(Title, "Title 4"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 4."), tEOF,
+		},
+	},
+	{
+		"higher-level section (Title 4)",
+		`Test return to existing, higher-level section (Title 4).
+
+Title 1
+=======
+Paragraph 1.
+
+Title 2
+-------
+Paragraph 2.
+
+Title 3
+` + "```````" + `
+Paragraph 3.
+
+Title 4
+-------
+Paragraph 4.`,
+		[]Token{
+			item(Paragraph, "Test return to existing, higher-level section (Title 4)."), tBlankLine,
+			item(Title, "Title 1"), tSectionAdornment7, item(Paragraph, "Paragraph 1."), tBlankLine,
+			item(Title, "Title 2"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 2."), tBlankLine,
+			item(Title, "Title 3"), tSectionAdornmentTick7, item(Paragraph, "Paragraph 3."), tBlankLine,
+			item(Title, "Title 4"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 4."), tEOF,
+		},
+	},
+	{
+		"bad subsection order (Title 4)",
+		`Test bad subsection order (Title 4).
+
+Title 1
+=======
+Paragraph 1.
+
+Title 2
+-------
+Paragraph 2.
+
+Title 3
+=======
+Paragraph 3.
+
+Title 4
+` + "```````" + `
+Paragraph 4.`,
+		[]Token{
+			item(Paragraph, "Test bad subsection order (Title 4)."), tBlankLine,
+			item(Title, "Title 1"), tSectionAdornment7, item(Paragraph, "Paragraph 1."), tBlankLine,
+			item(Title, "Title 2"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 2."), tBlankLine,
+			item(Title, "Title 3"), tSectionAdornment7, item(Paragraph, "Paragraph 3."), tBlankLine,
+			item(Title, "Title 4"), tSectionAdornmentTick7, item(Paragraph, "Paragraph 4."), tEOF,
+		},
+	},
+	{
+		"bad subsection order (Title 4, with overlines)",
+		`Test bad subsection order (Title 4, with overlines).
+
+=======
+Title 1
+=======
+Paragraph 1.
+
+-------
+Title 2
+-------
+Paragraph 2.
+
+=======
+Title 3
+=======
+Paragraph 3.
+
+` + "```````" + `
+Title 4
+` + "```````" + `
+Paragraph 4.`,
+		[]Token{
+			item(Paragraph, "Test bad subsection order (Title 4, with overlines)."), tBlankLine,
+			tSectionAdornment7, item(Title, "Title 1"), tSectionAdornment7, item(Paragraph, "Paragraph 1."), tBlankLine,
+			tSectionAdornmentDash7, item(Title, "Title 2"), tSectionAdornmentDash7, item(Paragraph, "Paragraph 2."), tBlankLine,
+			tSectionAdornment7, item(Title, "Title 3"), tSectionAdornment7, item(Paragraph, "Paragraph 3."), tBlankLine,
+			tSectionAdornmentTick7, item(Title, "Title 4"), tSectionAdornmentTick7, item(Paragraph, "Paragraph 4."), tEOF,
+		},
+	},
+	{
+		"title, inline markup",
+		`Title containing *inline* ` + "``markup``" + `
+====================================
+
+Paragraph.`,
+		[]Token{
+			item(Title, "Title containing *inline* ``markup``"), // TODO: Should be InlineEmphasisOpen, etc. once implemented
+			item(SectionAdornment, "===================================="), tBlankLine,
+			item(Paragraph, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"numbered title",
+		`1. Numbered Title
+=================
+
+Paragraph.`,
+		[]Token{
+			item(Title, "1. Numbered Title"), item(SectionAdornment, "================="), tBlankLine,
+			item(Paragraph, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"enumerated list, numbered title",
+		`1. Item 1.
+2. Item 2.
+3. Numbered Title
+=================
+
+Paragraph.`,
+		[]Token{
+			item(Paragraph, "1. Item 1."), item(Paragraph, "2. Item 2."), // TODO: Should be EnumListArabic, etc. once implemented
+			item(Title, "3. Numbered Title"), item(SectionAdornment, "================="), tBlankLine,
+			item(Paragraph, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"short title",
+		`ABC
+===
+
+Short title.`,
+		[]Token{item(Title, "ABC"), item(SectionAdornment, "==="), tBlankLine, item(Paragraph, "Short title."), tEOF},
 	},
 }
 
