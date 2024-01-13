@@ -26,7 +26,8 @@ var (
 	tSpace2                = item(Space, "  ")
 	tSpace3                = item(Space, "   ")
 	tSpace4                = item(Space, "    ")
-	tSectionAdornment      = item(SectionAdornment, "=====")
+	tSectionAdornment5     = item(SectionAdornment, "=====")
+	tSectionAdornment7     = item(SectionAdornment, "=======")
 	tSectionAdornmentDash  = item(SectionAdornment, "-----")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
@@ -450,9 +451,9 @@ Title
 Paragraph.`,
 		[]Token{
 			item(Paragraph, "Duplicate implicit targets."), tBlankLine,
-			item(Title, "Title"), tSectionAdornment,
+			item(Title, "Title"), tSectionAdornment5,
 			tBlankLine, item(Paragraph, "Paragraph."), tBlankLine,
-			item(Title, "Title"), tSectionAdornment,
+			item(Title, "Title"), tSectionAdornment5,
 			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
@@ -468,7 +469,7 @@ Title
 Paragraph.`,
 		[]Token{
 			item(Paragraph, "Duplicate implicit/explicit targets."), tBlankLine,
-			item(Title, "Title"), tSectionAdornment,
+			item(Title, "Title"), tSectionAdornment5,
 			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
 			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
@@ -484,7 +485,7 @@ Title
    :name: title`,
 		[]Token{
 			item(Paragraph, "Duplicate implicit/directive targets."), tBlankLine,
-			item(Title, "Title"), tSectionAdornment,
+			item(Title, "Title"), tSectionAdornment5,
 			tBlankLine, tComment, tSpace, item(Paragraph, "target-notes::"), // TODO: Should be Directive once implemented
 			tSpace3, item(Paragraph, ":name: title"), tEOF,
 		},
@@ -724,14 +725,14 @@ smart dude.`,
 =====
 
 Paragraph.`,
-		[]Token{item(Title, "Title"), tSectionAdornment, tBlankLine, item(Paragraph, "Paragraph."), tEOF},
+		[]Token{item(Title, "Title"), tSectionAdornment5, tBlankLine, item(Paragraph, "Paragraph."), tEOF},
 	},
 	{
 		"title, no line break",
 		`Title
 =====
 Paragraph (no blank line).`,
-		[]Token{item(Title, "Title"), tSectionAdornment, item(Paragraph, "Paragraph (no blank line)."), tEOF},
+		[]Token{item(Title, "Title"), tSectionAdornment5, item(Paragraph, "Paragraph (no blank line)."), tEOF},
 	},
 	{
 		"paragraph, title, paragraph",
@@ -742,7 +743,7 @@ Title
 
 Paragraph.`,
 		[]Token{
-			item(Paragraph, "Paragraph."), tBlankLine, item(Title, "Title"), tSectionAdornment, tBlankLine,
+			item(Paragraph, "Paragraph."), tBlankLine, item(Title, "Title"), tSectionAdornment5, tBlankLine,
 			item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
@@ -760,9 +761,98 @@ Paragraph.`,
     Paragraph.`,
 		[]Token{
 			item(Paragraph, "Test unexpected section titles."), tBlankLine, tSpace4, item(Title, "Title"),
-			tSpace4, tSectionAdornment, tSpace4, item(Paragraph, "Paragraph."), tBlankLine,
+			tSpace4, tSectionAdornment5, tSpace4, item(Paragraph, "Paragraph."), tBlankLine,
 			tSpace4, tSectionAdornmentDash, tSpace4, item(Title, "Title"), tSpace4, tSectionAdornmentDash,
 			tSpace4, item(Paragraph, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"short underline",
+		`Title
+====
+
+Test short underline.`,
+		[]Token{
+			item(Title, "Title"), item(SectionAdornment, "===="), tBlankLine,
+			item(Paragraph, "Test short underline."), tEOF,
+		},
+	},
+	{
+		"title combining characters",
+		`à with combining varia
+======================
+
+Do not count combining chars in title column width.`,
+		[]Token{
+			item(Title, "à with combining varia"), item(SectionAdornment, "======================"), tBlankLine,
+			item(Paragraph, "Do not count combining chars in title column width."), tEOF,
+		},
+	},
+	{
+		"title, over/underline",
+		`=====
+Title
+=====
+
+Test overline title.`,
+		[]Token{
+			tSectionAdornment5, item(Title, "Title"), tSectionAdornment5, tBlankLine,
+			item(Paragraph, "Test overline title."), tEOF,
+		},
+	},
+	{
+		"title, missing underline",
+		`========================
+ Test Missing Underline`,
+		[]Token{
+			item(SectionAdornment, "========================"), tSpace,
+			item(Paragraph, "Test Missing Underline"), tEOF,
+		},
+	},
+	{
+		"title, missing underline, blank line",
+		`========================
+ Test Missing Underline
+
+`,
+		[]Token{
+			item(SectionAdornment, "========================"), tSpace,
+			item(Paragraph, "Test Missing Underline"), tBlankLine, tEOF,
+		},
+	},
+	{
+		"title, missing underline, paragraph",
+		`=======
+ Title
+
+Test missing underline, with paragraph.`,
+		[]Token{
+			tSectionAdornment7, tSpace, item(Paragraph, "Title"), tBlankLine,
+			item(Paragraph, "Test missing underline, with paragraph."), tEOF,
+		},
+	},
+	{
+		"long title",
+		`=======
+ Long    Title
+=======
+
+Test long title and space normalization.`,
+		[]Token{
+			tSectionAdornment7, tSpace, item(Title, "Long    Title"), tSectionAdornment7,
+			tBlankLine, item(Paragraph, "Test long title and space normalization."), tEOF,
+		},
+	},
+	{
+		"title, over/underline mismatch",
+		`=======
+ Title
+-------
+
+Paragraph.`,
+		[]Token{
+			tSectionAdornment7, tSpace, item(Title, "Title"), item(SectionAdornment, "-------"),
+			tBlankLine, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 }

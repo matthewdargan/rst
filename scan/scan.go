@@ -427,15 +427,14 @@ func (l *Scanner) isTitle() bool {
 			break
 		}
 	}
-	t := l.pos - pos
-	isSectionAdornment := l.isSectionAdornmentNext(l.next(), t)
+	isSectionAdornment := l.isSectionAdornmentNext(l.next())
 	l.pos = pos
 	l.lastWidth = lastWidth
 	return isSectionAdornment
 }
 
 // isSectionAdornmentNext reports whether the next line to scan is a section adornment.
-func (l *Scanner) isSectionAdornmentNext(r rune, titleLen int) bool {
+func (l *Scanner) isSectionAdornmentNext(r rune) bool {
 	if unicode.IsSpace(r) {
 		nonSpaceIndex := strings.IndexFunc(l.input[l.pos:], func(c rune) bool {
 			return !unicode.IsSpace(c)
@@ -451,10 +450,7 @@ func (l *Scanner) isSectionAdornmentNext(r rune, titleLen int) bool {
 	}
 	i := strings.IndexRune(l.input[l.pos:], '\n')
 	section := l.input[l.pos-1 : l.pos+i]
-	if section != strings.Repeat(string(r), len(section)) {
-		return false
-	}
-	return len(section) >= titleLen
+	return section == strings.Repeat(string(r), len(section))
 }
 
 // isSectionAdornment reports whether the scanner is on a section adornment.
@@ -466,5 +462,5 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	if i < 0 {
 		return false
 	}
-	return l.isSectionAdornmentNext(r, i)
+	return l.isSectionAdornmentNext(r)
 }
