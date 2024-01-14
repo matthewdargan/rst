@@ -12,24 +12,25 @@ func _() {
 	_ = x[Error-1]
 	_ = x[BlankLine-2]
 	_ = x[Space-3]
-	_ = x[Paragraph-4]
-	_ = x[Title-5]
-	_ = x[SectionAdornment-6]
-	_ = x[Comment-7]
-	_ = x[HyperlinkStart-8]
-	_ = x[HyperlinkPrefix-9]
-	_ = x[HyperlinkQuote-10]
-	_ = x[HyperlinkName-11]
-	_ = x[HyperlinkSuffix-12]
-	_ = x[HyperlinkURI-13]
-	_ = x[InlineReferenceOpen-14]
-	_ = x[InlineReferenceText-15]
-	_ = x[InlineReferenceClose-16]
+	_ = x[Title-4]
+	_ = x[SectionAdornment-5]
+	_ = x[Paragraph-6]
+	_ = x[Bullet-7]
+	_ = x[Comment-8]
+	_ = x[HyperlinkStart-9]
+	_ = x[HyperlinkPrefix-10]
+	_ = x[HyperlinkQuote-11]
+	_ = x[HyperlinkName-12]
+	_ = x[HyperlinkSuffix-13]
+	_ = x[HyperlinkURI-14]
+	_ = x[InlineReferenceOpen-15]
+	_ = x[InlineReferenceText-16]
+	_ = x[InlineReferenceClose-17]
 }
 
-const _Type_name = "EOFErrorBlankLineSpaceParagraphTitleSectionAdornmentCommentHyperlinkStartHyperlinkPrefixHyperlinkQuoteHyperlinkNameHyperlinkSuffixHyperlinkURIInlineReferenceOpenInlineReferenceTextInlineReferenceClose"
+const _Type_name = "EOFErrorBlankLineSpaceTitleSectionAdornmentParagraphBulletCommentHyperlinkStartHyperlinkPrefixHyperlinkQuoteHyperlinkNameHyperlinkSuffixHyperlinkURIInlineReferenceOpenInlineReferenceTextInlineReferenceClose"
 
-var _Type_index = [...]uint8{0, 3, 8, 17, 22, 31, 36, 52, 59, 73, 88, 102, 115, 130, 142, 161, 180, 200}
+var _Type_index = [...]uint8{0, 3, 8, 17, 22, 27, 43, 52, 58, 65, 79, 94, 108, 121, 136, 148, 167, 186, 206}
 
 func (i Type) String() string {
 	if i < 0 || i >= Type(len(_Type_index)-1) {

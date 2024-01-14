@@ -35,6 +35,9 @@ var (
 	tSectionAdornmentDash7 = item(SectionAdornment, "-------")
 	tSectionAdornmentDot3  = item(SectionAdornment, "...")
 	tSectionAdornmentTick7 = item(SectionAdornment, "```````")
+	tBulletAsterisk        = item(Bullet, "*")
+	tBulletPlus            = item(Bullet, "+")
+	tBulletDash            = item(Bullet, "-")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
 	tAnonHyperlinkStart    = item(HyperlinkStart, "__")
@@ -236,8 +239,8 @@ term 2
 
   bullet paragraph 3`,
 		[]Token{
-			item(Paragraph, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2, item(Paragraph, "bullet paragraph 2"), tBlankLine,
+			tBulletPlus, tSpace, item(Paragraph, "bullet paragraph 1"), tBlankLine,
+			tSpace2, item(Paragraph, "bullet paragraph 2"), tBlankLine,
 			tSpace2, tComment, tSpace, item(Paragraph, "comment between bullet paragraphs 2 and 3"),
 			tBlankLine, tSpace2, item(Paragraph, "bullet paragraph 3"), tEOF,
 		},
@@ -250,9 +253,8 @@ term 2
 
   bullet paragraph 2`,
 		[]Token{
-			item(Paragraph, "+ bullet paragraph 1"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2,
-			tComment, tSpace, item(Paragraph, "comment between bullet paragraphs 1 (leader) and 2"),
+			tBulletPlus, tSpace, item(Paragraph, "bullet paragraph 1"), tBlankLine,
+			tSpace2, tComment, tSpace, item(Paragraph, "comment between bullet paragraphs 1 (leader) and 2"),
 			tBlankLine, tSpace2, item(Paragraph, "bullet paragraph 2"), tEOF,
 		},
 	},
@@ -262,8 +264,8 @@ term 2
 
   .. trailing comment`,
 		[]Token{
-			item(Paragraph, "+ bullet"), // TODO: Should be Bullet once implemented
-			tBlankLine, tSpace2, tComment, tSpace, item(Paragraph, "trailing comment"), tEOF,
+			tBulletPlus, tSpace, item(Paragraph, "bullet"), tBlankLine,
+			tSpace2, tComment, tSpace, item(Paragraph, "trailing comment"), tEOF,
 		},
 	},
 	{"comment, not target", ".. _", []Token{tComment, tSpace, item(Paragraph, "_"), tEOF}},
@@ -724,7 +726,7 @@ Line 3.`,
 smart dude.`,
 		[]Token{item(Paragraph, "A. Einstein was a really"), item(Paragraph, "smart dude."), tEOF},
 	},
-	//  section headers
+	// section headers
 	{
 		"title",
 		`Title
@@ -1234,6 +1236,21 @@ Without it, the parser ends up in an infinite loop.`,
 			tSectionAdornment3, item(Title, "Two"), tSectionAdornment3, tBlankLine,
 			item(Paragraph, "The parser currently contains a work-around kludge."),
 			item(Paragraph, "Without it, the parser ends up in an infinite loop."), tEOF,
+		},
+	},
+	// bullet lists
+	{
+		"bullet list", "- item",
+		[]Token{tBulletDash, tSpace, item(Paragraph, "item"), tEOF},
+	},
+	{
+		"bullet list, 2 items",
+		`* item 1
+
+* item 2`,
+		[]Token{
+			tBulletAsterisk, tSpace, item(Paragraph, "item 1"), tBlankLine,
+			tBulletAsterisk, tSpace, item(Paragraph, "item 2"), tEOF,
 		},
 	},
 }
