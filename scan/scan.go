@@ -197,12 +197,12 @@ func lexAny(l *Scanner) stateFn {
 		return lexSpace
 	case l.isComment(r):
 		return lexComment
+	case l.isSectionAdornment(r):
+		return lexUntilTerminator(l, SectionAdornment)
 	case l.isHyperlinkStart():
 		return lexHyperlinkStart
 	case l.isHyperlinkPrefix():
 		return lexHyperlinkPrefix
-	case l.isSectionAdornment(r):
-		return lexUntilTerminator(l, SectionAdornment)
 	case r == '`':
 		return lexQuote
 	case l.isHyperlinkName():
@@ -334,11 +334,14 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 
 // isComment reports whether the scanner is on a comment.
 func (l *Scanner) isComment(r rune) bool {
-	if r != '.' {
+	if r != '.' || l.types[1] == Title {
 		return false
 	}
 	s := l.input[l.start:]
-	return s == hyperlinkStart || !strings.HasPrefix(s, hyperlinkStart)
+	if strings.HasPrefix(s, hyperlinkStart) && len(s) > len(hyperlinkStart) {
+		return false
+	}
+	return !strings.HasPrefix(s, "...")
 }
 
 // isHyperlinkStart reports whether the scanner is on a hyperlink start.

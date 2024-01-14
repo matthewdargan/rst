@@ -27,11 +27,13 @@ var (
 	tSpace3                = item(Space, "   ")
 	tSpace4                = item(Space, "    ")
 	tSectionAdornment2     = item(SectionAdornment, "==")
+	tSectionAdornment3     = item(SectionAdornment, "===")
 	tSectionAdornment5     = item(SectionAdornment, "=====")
 	tSectionAdornment7     = item(SectionAdornment, "=======")
 	tSectionAdornment24    = item(SectionAdornment, "========================")
 	tSectionAdornmentDash5 = item(SectionAdornment, "-----")
 	tSectionAdornmentDash7 = item(SectionAdornment, "-------")
+	tSectionAdornmentDot3  = item(SectionAdornment, "...")
 	tSectionAdornmentTick7 = item(SectionAdornment, "```````")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
@@ -1072,10 +1074,10 @@ Paragraph.`,
 ===
 
 Short title.`,
-		[]Token{item(Title, "ABC"), item(SectionAdornment, "==="), tBlankLine, item(Paragraph, "Short title."), tEOF},
+		[]Token{item(Title, "ABC"), tSectionAdornment3, tBlankLine, item(Paragraph, "Short title."), tEOF},
 	},
 	{
-		"short title, short underline",
+		"title, short underline",
 		`ABC
 ==
 
@@ -1083,7 +1085,7 @@ Underline too short.`,
 		[]Token{item(Title, "ABC"), tSectionAdornment2, tBlankLine, item(Paragraph, "Underline too short."), tEOF},
 	},
 	{
-		"short title, short over/underline",
+		"title, short over/underline",
 		`==
 ABC
 ==
@@ -1095,7 +1097,7 @@ Over & underline too short.`,
 		},
 	},
 	{
-		"short title, short overline",
+		"title, short overline",
 		`==
 ABC
 
@@ -1110,6 +1112,129 @@ Overline too short, no underline.`,
 		`==
 ABC`,
 		[]Token{tSectionAdornment2, item(Paragraph, "ABC"), tEOF},
+	},
+	{
+		"definition list",
+		`==
+  Not a title: a definition list item.`,
+		[]Token{
+			tSectionAdornment2, tSpace2, item(Paragraph, "Not a title: a definition list item."), // TODO: Should be DefinitionList once implemented
+			tEOF,
+		},
+	},
+	{
+		"definition lists",
+		`==
+  Not a title: a definition list item.
+--
+  Another definition list item.  It's in a different list,
+  but that's an acceptable limitation given that this will
+  probably never happen in real life.
+
+  The next line will trigger a warning:
+==`,
+		[]Token{
+			tSectionAdornment2, tSpace2, item(Title, "Not a title: a definition list item."), // TODO: Should be DefinitionList once implemented
+			item(SectionAdornment, "--"), tSpace2, item(Paragraph, "Another definition list item.  It's in a different list,"),
+			tSpace2, item(Paragraph, "but that's an acceptable limitation given that this will"),
+			tSpace2, item(Paragraph, "probably never happen in real life."), tBlankLine,
+			tSpace2, item(Title, "The next line will trigger a warning:"), tSectionAdornment2, tEOF,
+		},
+	},
+	{
+		"indented title, short over/underline",
+		`Paragraph
+
+    ==
+    ABC
+    ==
+
+    Over & underline too short.`,
+		[]Token{
+			item(Paragraph, "Paragraph"), tBlankLine, tSpace4, tSectionAdornment2,
+			tSpace4, item(Title, "ABC"), tSpace4, tSectionAdornment2, tBlankLine, tSpace4,
+			item(Paragraph, "Over & underline too short."), // TODO: Should be BlockQuote once implemented
+			tEOF,
+		},
+	},
+	{
+		"indented title, short underline",
+		`Paragraph
+
+    ABC
+    ==
+
+    Underline too short.`,
+		[]Token{
+			item(Paragraph, "Paragraph"), tBlankLine, tSpace4, item(Title, "ABC"),
+			tSpace4, tSectionAdornment2, tBlankLine, tSpace4,
+			item(Paragraph, "Underline too short."), // TODO: Should be BlockQuote once implemented
+			tEOF,
+		},
+	},
+	{
+		"incomplete sections",
+		`...
+...
+
+...
+---
+
+...
+...
+...`,
+		[]Token{
+			tSectionAdornmentDot3, tSectionAdornmentDot3, tBlankLine,
+			tSectionAdornmentDot3, item(SectionAdornment, "---"), tBlankLine,
+			tSectionAdornmentDot3, tSectionAdornmentDot3, tSectionAdornmentDot3, tEOF,
+		},
+	},
+	{
+		"2 character section titles",
+		`..
+Hi
+..
+
+...
+Yo
+...
+
+Ho`,
+		[]Token{
+			tComment, item(Title, "Hi"), item(SectionAdornment, ".."), tBlankLine,
+			tSectionAdornmentDot3, item(Title, "Yo"), tSectionAdornmentDot3, tBlankLine,
+			item(Paragraph, "Ho"), tEOF,
+		},
+	},
+	{
+		"empty section",
+		`Empty Section
+=============`,
+		[]Token{item(Title, "Empty Section"), item(SectionAdornment, "============="), tEOF},
+	},
+	{
+		"3 character section titles",
+		`===
+One
+===
+
+The bubble-up parser strategy conflicts with short titles
+(<= 3 char-long over- & underlines).
+
+===
+Two
+===
+
+The parser currently contains a work-around kludge.
+Without it, the parser ends up in an infinite loop.`,
+		[]Token{
+			tSectionAdornment3, item(Title, "One"), tSectionAdornment3, tBlankLine,
+			item(Paragraph, "The bubble-up parser strategy conflicts with short titles"),
+			item(Paragraph, "(<= 3 char-long over- & underlines)."), tBlankLine,
+			tSectionAdornment3, item(Title, "Two"), tSectionAdornment3, tBlankLine,
+			item(Paragraph, "The parser currently contains a work-around kludge."),
+			item(Paragraph, "Without it, the parser ends up in an infinite loop."), tEOF,
+		},
 	},
 }
 
