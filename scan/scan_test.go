@@ -26,6 +26,7 @@ var (
 	tSpace2                = item(Space, "  ")
 	tSpace3                = item(Space, "   ")
 	tSpace4                = item(Space, "    ")
+	tSectionAdornment2     = item(SectionAdornment, "==")
 	tSectionAdornment5     = item(SectionAdornment, "=====")
 	tSectionAdornment7     = item(SectionAdornment, "=======")
 	tSectionAdornment24    = item(SectionAdornment, "========================")
@@ -1072,6 +1073,43 @@ Paragraph.`,
 
 Short title.`,
 		[]Token{item(Title, "ABC"), item(SectionAdornment, "==="), tBlankLine, item(Paragraph, "Short title."), tEOF},
+	},
+	{
+		"short title, short underline",
+		`ABC
+==
+
+Underline too short.`,
+		[]Token{item(Title, "ABC"), tSectionAdornment2, tBlankLine, item(Paragraph, "Underline too short."), tEOF},
+	},
+	{
+		"short title, short over/underline",
+		`==
+ABC
+==
+
+Over & underline too short.`,
+		[]Token{
+			tSectionAdornment2, item(Title, "ABC"), tSectionAdornment2, tBlankLine,
+			item(Paragraph, "Over & underline too short."), tEOF,
+		},
+	},
+	{
+		"short title, short overline",
+		`==
+ABC
+
+Overline too short, no underline.`,
+		[]Token{
+			tSectionAdornment2, item(Paragraph, "ABC"), tBlankLine,
+			item(Paragraph, "Overline too short, no underline."), tEOF,
+		},
+	},
+	{
+		"incomplete section",
+		`==
+ABC`,
+		[]Token{tSectionAdornment2, item(Paragraph, "ABC"), tEOF},
 	},
 }
 

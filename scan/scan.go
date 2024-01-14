@@ -195,14 +195,14 @@ func lexAny(l *Scanner) stateFn {
 		return l.emit(BlankLine)
 	case unicode.IsSpace(r):
 		return lexSpace
-	case l.isSectionAdornment(r):
-		return lexUntilTerminator(l, SectionAdornment)
 	case l.isComment(r):
 		return lexComment
 	case l.isHyperlinkStart():
 		return lexHyperlinkStart
 	case l.isHyperlinkPrefix():
 		return lexHyperlinkPrefix
+	case l.isSectionAdornment(r):
+		return lexUntilTerminator(l, SectionAdornment)
 	case r == '`':
 		return lexQuote
 	case l.isHyperlinkName():
@@ -450,10 +450,6 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	if !strings.ContainsRune(adornments, r) {
 		return false
 	}
-	i := strings.IndexRune(l.input[l.pos:], '\n')
-	section := l.input[l.pos:]
-	if i > 0 {
-		section = section[:i]
-	}
-	return len(section) > 1 && section == strings.Repeat(string(r), len(section))
+	s := strings.TrimSuffix(l.input[l.pos-1:], "\n")
+	return len(s) > 1 && s == strings.Repeat(string(r), len(s))
 }
