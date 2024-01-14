@@ -438,11 +438,9 @@ func (l *Scanner) isTitle() bool {
 		r = l.next()
 	}
 	r = l.next()
-	if unicode.IsSpace(r) {
-		if i := strings.IndexFunc(l.input[l.pos:], notSpace); i > 0 {
-			l.pos += i
-			r = l.next()
-		}
+	if i := strings.IndexFunc(l.input[l.pos:], notSpace); i > 0 {
+		l.pos += i
+		r = l.next()
 	}
 	isSection := l.isSectionAdornment(r)
 	l.pos, l.lastWidth = pos, lastWidth
