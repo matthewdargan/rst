@@ -1253,6 +1253,95 @@ Without it, the parser ends up in an infinite loop.`,
 			tBulletAsterisk, tSpace, item(Paragraph, "item 2"), tEOF,
 		},
 	},
+	{
+		"no blank line between bullet list",
+		`No blank line between:
+
++ item 1
++ item 2`,
+		[]Token{
+			item(Paragraph, "No blank line between:"), tBlankLine,
+			tBulletPlus, tSpace, item(Paragraph, "item 1"),
+			tBulletPlus, tSpace, item(Paragraph, "item 2"), tEOF,
+		},
+	},
+	{
+		"bullet list with paragraph",
+		`- item 1, para 1.
+
+  item 1, para 2.
+
+- item 2`,
+		[]Token{
+			tBulletDash, tSpace, item(Paragraph, "item 1, para 1."), tBlankLine,
+			tSpace2, item(Paragraph, "item 1, para 2."), tBlankLine,
+			tBulletDash, tSpace, item(Paragraph, "item 2"), tEOF,
+		},
+	},
+	{
+		"bullet list with paragraph, no blank line",
+		`- item 1, line 1
+  item 1, line 2
+- item 2`,
+		[]Token{
+			tBulletDash, tSpace, item(Paragraph, "item 1, line 1"),
+			tSpace2, item(Paragraph, "item 1, line 2"),
+			tBulletDash, tSpace, item(Paragraph, "item 2"), tEOF,
+		},
+	},
+	{
+		"different bullets",
+		`Different bullets:
+
+- item 1
+
++ item 1
+
+* item 1
+- item 1`,
+		[]Token{
+			item(Paragraph, "Different bullets:"), tBlankLine,
+			tBulletDash, tSpace, item(Paragraph, "item 1"), tBlankLine,
+			tBulletPlus, tSpace, item(Paragraph, "item 1"), tBlankLine,
+			tBulletAsterisk, tSpace, item(Paragraph, "item 1"),
+			tBulletDash, tSpace, item(Paragraph, "item 1"), tEOF,
+		},
+	},
+	{
+		"bullet list, no blank line",
+		`- item
+no blank line`,
+		[]Token{tBulletDash, tSpace, item(Paragraph, "item"), item(Paragraph, "no blank line"), tEOF},
+	},
+	{
+		"empty bullet list",
+		`-
+
+empty item above`,
+		[]Token{tBulletDash, tBlankLine, item(Paragraph, "empty item above"), tEOF},
+	},
+	{
+		"empty bullet list, no blank line",
+		`-
+empty item above, no blank line`,
+		[]Token{tBulletDash, item(Paragraph, "empty item above, no blank line"), tEOF},
+	},
+	{
+		"unicode bullet lists",
+		`Unicode bullets:
+
+• BULLET
+
+‣ TRIANGULAR BULLET
+
+⁃ HYPHEN BULLET`,
+		[]Token{
+			item(Paragraph, "Unicode bullets:"), tBlankLine,
+			item(Bullet, "•"), tSpace, item(Paragraph, "BULLET"), tBlankLine,
+			item(Bullet, "‣"), tSpace, item(Paragraph, "TRIANGULAR BULLET"), tBlankLine,
+			item(Bullet, "⁃"), tSpace, item(Paragraph, "HYPHEN BULLET"), tEOF,
+		},
+	},
 }
 
 // collect gathers the emitted items into a slice.

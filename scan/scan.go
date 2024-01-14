@@ -33,8 +33,8 @@ const (
 	Title                            // Title identifies a section
 	SectionAdornment                 // SectionAdornment underlines or overlines a title
 	Paragraph                        // Paragraph is left-aligned text with no markup
-	Bullet                           // Bullet begins a bullet list item
-	Comment                          // Comment marker
+	Bullet                           // Bullet starts a bullet list
+	Comment                          // Comment starts a comment
 	HyperlinkStart                   // HyperlinkStart starts a hyperlink target
 	HyperlinkPrefix                  // HyperlinkPrefix prefixes a hyperlink target name
 	HyperlinkQuote                   // HyperlinkQuote encloses a hyperlink target name that contains any colons
@@ -184,8 +184,8 @@ const (
 	hyperlinkStart      = ".. _"
 	anonHyperlinkStart  = "__ "
 	anonHyperlinkPrefix = "__:"
-	adornments          = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 	bullets             = "*+-•‣⁃"
+	adornments          = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
 )
 
 // lexAny scans non-space items.
@@ -198,7 +198,7 @@ func lexAny(l *Scanner) stateFn {
 	case unicode.IsSpace(r):
 		return lexSpace
 	case l.isBullet(r):
-		return l.emit(Bullet)
+		return lexEndOfLine(l, Bullet)
 	case l.isComment(r):
 		return lexComment
 	case l.isSectionAdornment(r):
@@ -336,6 +336,11 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 	return lexEndOfLine(l, InlineReferenceClose)
 }
 
+// isBullet reports whether the scanner is on a bullet.
+func (l *Scanner) isBullet(r rune) bool {
+	return strings.ContainsRune(bullets, r) && unicode.IsSpace(l.peek())
+}
+
 // isComment reports whether the scanner is on a comment.
 func (l *Scanner) isComment(r rune) bool {
 	if r != '.' || l.types[1] == Title {
@@ -458,9 +463,4 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	}
 	s := strings.TrimSuffix(l.input[l.pos-1:], "\n")
 	return len(s) > 1 && s == strings.Repeat(string(r), len(s))
-}
-
-// isBullet reports whether the scanner is on a bullet.
-func (l *Scanner) isBullet(r rune) bool {
-	return strings.ContainsRune(bullets, r) && unicode.IsSpace(l.peek())
 }
