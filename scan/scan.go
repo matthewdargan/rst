@@ -32,6 +32,7 @@ const (
 	Space                            // Space indents elements
 	Title                            // Title identifies a section
 	SectionAdornment                 // SectionAdornment underlines or overlines a title
+	Transition                       // Transition separate other body elements
 	Paragraph                        // Paragraph is left-aligned text with no markup
 	Bullet                           // Bullet starts a bullet list
 	Comment                          // Comment starts a comment
@@ -201,6 +202,8 @@ func lexAny(l *Scanner) stateFn {
 		return lexEndOfLine(l, Bullet)
 	case l.isComment(r):
 		return lexComment
+	case l.isTransition(r):
+		return lexUntilTerminator(l, Transition)
 	case l.isSectionAdornment(r):
 		return lexUntilTerminator(l, SectionAdornment)
 	case l.isHyperlinkStart():
@@ -459,6 +462,37 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	if !strings.ContainsRune(adornments, r) {
 		return false
 	}
-	s := strings.TrimSuffix(l.input[l.pos-1:], "\n")
+	s := strings.SplitN(l.input[l.pos-1:], "\n", 2)[0]
 	return len(s) > 1 && s == strings.Repeat(string(r), len(s))
+}
+
+// isTransition reports whether the scanner is on a transition.
+func (l *Scanner) isTransition(r rune) bool {
+	switch l.types[1] {
+	case EOF, BlankLine:
+		break
+	case Space:
+		if l.types[0] != BlankLine {
+			return false
+		}
+	default:
+		return false
+	}
+	if !strings.ContainsRune(adornments, r) {
+		return false
+	}
+	s := strings.TrimSuffix(l.input[l.pos-1:], "\n")
+	if len(s) < 4 || s != strings.Repeat(string(r), len(s)) {
+		return false
+	}
+	pos, lastWidth := l.pos, l.lastWidth
+	for r != eof && r != '\n' {
+		r = l.next()
+	}
+	r = l.peek()
+	l.pos, l.lastWidth = pos, lastWidth
+	if r != eof && r != '\n' {
+		return false
+	}
+	return true
 }

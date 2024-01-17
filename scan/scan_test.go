@@ -31,10 +31,13 @@ var (
 	tSectionAdornment5     = item(SectionAdornment, "=====")
 	tSectionAdornment7     = item(SectionAdornment, "=======")
 	tSectionAdornment24    = item(SectionAdornment, "========================")
+	tSectionAdornmentDash3 = item(SectionAdornment, "---")
 	tSectionAdornmentDash5 = item(SectionAdornment, "-----")
 	tSectionAdornmentDash7 = item(SectionAdornment, "-------")
 	tSectionAdornmentDot3  = item(SectionAdornment, "...")
 	tSectionAdornmentTick7 = item(SectionAdornment, "```````")
+	tTransition24          = item(Transition, "========================")
+	tTransitionDash8       = item(Transition, "--------")
 	tBulletAsterisk        = item(Bullet, "*")
 	tBulletPlus            = item(Bullet, "+")
 	tBulletDash            = item(Bullet, "-")
@@ -869,10 +872,9 @@ Test missing titles; blank line in-between.
 
 ========================`,
 		[]Token{
-			tSectionAdornment24, // TODO: Should be Transition once implemented
-			tBlankLine, tSectionAdornment24, tBlankLine,
+			tTransition24, tBlankLine, tTransition24, tBlankLine,
 			item(Paragraph, "Test missing titles; blank line in-between."), tBlankLine,
-			tSectionAdornment24, tBlankLine, tSectionAdornment24, tEOF,
+			tTransition24, tBlankLine, tTransition24, tEOF,
 		},
 	},
 	{
@@ -1187,7 +1189,7 @@ ABC`,
 ...`,
 		[]Token{
 			tSectionAdornmentDot3, tSectionAdornmentDot3, tBlankLine,
-			tSectionAdornmentDot3, item(SectionAdornment, "---"), tBlankLine,
+			tSectionAdornmentDot3, tSectionAdornmentDash3, tBlankLine,
 			tSectionAdornmentDot3, tSectionAdornmentDot3, tSectionAdornmentDot3, tEOF,
 		},
 	},
@@ -1340,6 +1342,93 @@ empty item above, no blank line`,
 			item(Bullet, "•"), tSpace, item(Paragraph, "BULLET"), tBlankLine,
 			item(Bullet, "‣"), tSpace, item(Paragraph, "TRIANGULAR BULLET"), tBlankLine,
 			item(Bullet, "⁃"), tSpace, item(Paragraph, "HYPHEN BULLET"), tEOF,
+		},
+	},
+	// transitions
+	{
+		"transition",
+		`Test transition markers.
+
+--------
+
+Paragraph`,
+		[]Token{
+			item(Paragraph, "Test transition markers."), tBlankLine,
+			tTransitionDash8, tBlankLine, item(Paragraph, "Paragraph"), tEOF,
+		},
+	},
+	{
+		"section, transition, section",
+		`Section 1
+=========
+First text division of section 1.
+
+--------
+
+Second text division of section 1.
+
+Section 2
+---------
+Paragraph 2 in section 2.`,
+		[]Token{
+			item(Title, "Section 1"), item(SectionAdornment, "========="),
+			item(Paragraph, "First text division of section 1."), tBlankLine,
+			tTransitionDash8, tBlankLine, item(Paragraph, "Second text division of section 1."),
+			tBlankLine, item(Title, "Section 2"), item(SectionAdornment, "---------"),
+			item(Paragraph, "Paragraph 2 in section 2."), tEOF,
+		},
+	},
+	{
+		"non-standard transitions",
+		`--------
+
+According to the DTD, a section or document may not begin with a transition.
+
+Note: There is currently no warning, but in future these
+DTD violations should be prevented or at least trigger a warning.
+Alternatively, the DTD may be relaxed to accomodate for more use cases.
+
+The DTD specifies that two transitions may not
+be adjacent:
+
+--------
+
+--------
+
+--------
+
+The DTD also specifies that a section or document
+may not end with a transition.
+
+--------`,
+		[]Token{
+			tTransitionDash8, tBlankLine,
+			item(Paragraph, "According to the DTD, a section or document may not begin with a transition."),
+			tBlankLine, item(Paragraph, "Note: There is currently no warning, but in future these"),
+			item(Paragraph, "DTD violations should be prevented or at least trigger a warning."),
+			item(Paragraph, "Alternatively, the DTD may be relaxed to accomodate for more use cases."),
+			tBlankLine, item(Paragraph, "The DTD specifies that two transitions may not"),
+			item(Paragraph, "be adjacent:"), tBlankLine, tTransitionDash8, tBlankLine,
+			tTransitionDash8, tBlankLine, tTransitionDash8, tBlankLine,
+			item(Paragraph, "The DTD also specifies that a section or document"),
+			item(Paragraph, "may not end with a transition."), tBlankLine,
+			tTransitionDash8, tEOF,
+		},
+	},
+	{
+		"block quote, unexpected transition",
+		`Test unexpected transition markers.
+
+    Block quote.
+
+    --------
+
+    Paragraph.`,
+		[]Token{
+			item(Paragraph, "Test unexpected transition markers."), tBlankLine,
+			tSpace4, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace4, tTransitionDash8, tBlankLine,
+			tSpace4, item(Paragraph, "Paragraph."), tEOF,
 		},
 	},
 }
