@@ -30,14 +30,15 @@ var (
 	tSectionAdornment3     = item(SectionAdornment, "===")
 	tSectionAdornment5     = item(SectionAdornment, "=====")
 	tSectionAdornment7     = item(SectionAdornment, "=======")
+	tSectionAdornment9     = item(SectionAdornment, "=========")
 	tSectionAdornment24    = item(SectionAdornment, "========================")
-	tSectionAdornmentDash3 = item(SectionAdornment, "---")
 	tSectionAdornmentDash5 = item(SectionAdornment, "-----")
 	tSectionAdornmentDash7 = item(SectionAdornment, "-------")
 	tSectionAdornmentDot3  = item(SectionAdornment, "...")
 	tSectionAdornmentTick7 = item(SectionAdornment, "```````")
 	tTransition24          = item(Transition, "========================")
 	tTransitionDash8       = item(Transition, "--------")
+	tTransitionDash10      = item(Transition, "----------")
 	tBulletAsterisk        = item(Bullet, "*")
 	tBulletPlus            = item(Bullet, "+")
 	tBulletDash            = item(Bullet, "-")
@@ -1189,7 +1190,7 @@ ABC`,
 ...`,
 		[]Token{
 			tSectionAdornmentDot3, tSectionAdornmentDot3, tBlankLine,
-			tSectionAdornmentDot3, tSectionAdornmentDash3, tBlankLine,
+			tSectionAdornmentDot3, item(SectionAdornment, "---"), tBlankLine,
 			tSectionAdornmentDot3, tSectionAdornmentDot3, tSectionAdornmentDot3, tEOF,
 		},
 	},
@@ -1371,7 +1372,7 @@ Section 2
 ---------
 Paragraph 2 in section 2.`,
 		[]Token{
-			item(Title, "Section 1"), item(SectionAdornment, "========="),
+			item(Title, "Section 1"), tSectionAdornment9,
 			item(Paragraph, "First text division of section 1."), tBlankLine,
 			tTransitionDash8, tBlankLine, item(Paragraph, "Second text division of section 1."),
 			tBlankLine, item(Title, "Section 2"), item(SectionAdornment, "---------"),
@@ -1386,7 +1387,7 @@ According to the DTD, a section or document may not begin with a transition.
 
 Note: There is currently no warning, but in future these
 DTD violations should be prevented or at least trigger a warning.
-Alternatively, the DTD may be relaxed to accomodate for more use cases.
+Alternatively, the DTD may be relaxed to accommodate for more use cases.
 
 The DTD specifies that two transitions may not
 be adjacent:
@@ -1406,7 +1407,7 @@ may not end with a transition.
 			item(Paragraph, "According to the DTD, a section or document may not begin with a transition."),
 			tBlankLine, item(Paragraph, "Note: There is currently no warning, but in future these"),
 			item(Paragraph, "DTD violations should be prevented or at least trigger a warning."),
-			item(Paragraph, "Alternatively, the DTD may be relaxed to accomodate for more use cases."),
+			item(Paragraph, "Alternatively, the DTD may be relaxed to accommodate for more use cases."),
 			tBlankLine, item(Paragraph, "The DTD specifies that two transitions may not"),
 			item(Paragraph, "be adjacent:"), tBlankLine, tTransitionDash8, tBlankLine,
 			tTransitionDash8, tBlankLine, tTransitionDash8, tBlankLine,
@@ -1430,6 +1431,146 @@ may not end with a transition.
 			tSpace4, tTransitionDash8, tBlankLine,
 			tSpace4, item(Paragraph, "Paragraph."), tEOF,
 		},
+	},
+	{
+		"short transition marker",
+		`Short transition marker.
+
+---
+
+Paragraph`,
+		[]Token{
+			item(Paragraph, "Short transition marker."), tBlankLine, item(Paragraph, "---"),
+			tBlankLine, item(Paragraph, "Paragraph"), tEOF,
+		},
+	},
+	{
+		"sections with transitions",
+		`Sections with transitions at beginning and end.
+
+Section 1
+=========
+
+----------
+
+The next transition is legal:
+
+----------
+
+Section 2
+=========
+
+----------`,
+		[]Token{
+			item(Paragraph, "Sections with transitions at beginning and end."), tBlankLine,
+			item(Title, "Section 1"), tSectionAdornment9, tBlankLine,
+			tTransitionDash10, tBlankLine, item(Paragraph, "The next transition is legal:"),
+			tBlankLine, tTransitionDash10, tBlankLine, item(Title, "Section 2"),
+			tSectionAdornment9, tBlankLine, tTransitionDash10, tEOF,
+		},
+	},
+	{
+		"paragraph, 2 transitions",
+		`A paragraph, two transitions, and a blank line.
+
+----------
+
+----------
+
+`,
+		[]Token{
+			item(Paragraph, "A paragraph, two transitions, and a blank line."), tBlankLine,
+			tTransitionDash10, tBlankLine, tTransitionDash10, tBlankLine, tEOF,
+		},
+	},
+	{
+		"paragraph, 2 transitions, no blank line",
+		`A paragraph and two transitions.
+
+----------
+
+----------`,
+		[]Token{
+			item(Paragraph, "A paragraph and two transitions."), tBlankLine,
+			tTransitionDash10, tBlankLine, tTransitionDash10, tEOF,
+		},
+	},
+	{
+		"beginning transition",
+		`----------
+
+Document beginning with a transition.`,
+		[]Token{
+			tTransitionDash10, tBlankLine,
+			item(Paragraph, "Document beginning with a transition."), tEOF,
+		},
+	},
+	{
+		"transition between subsections",
+		`Section 1
+=========
+
+Subsection 1
+------------
+
+Some text.
+
+----------
+
+Section 2
+=========
+
+Some text.`,
+		[]Token{
+			item(Title, "Section 1"), tSectionAdornment9, tBlankLine,
+			item(Title, "Subsection 1"), item(SectionAdornment, "------------"), tBlankLine,
+			item(Paragraph, "Some text."), tBlankLine, tTransitionDash10, tBlankLine,
+			item(Title, "Section 2"), tSectionAdornment9, tBlankLine,
+			item(Paragraph, "Some text."), tEOF,
+		},
+	},
+	{
+		"transition between sections",
+		`Section 1
+=========
+
+----------
+
+----------
+
+----------
+
+Section 2
+=========
+
+Some text.`,
+		[]Token{
+			item(Title, "Section 1"), tSectionAdornment9, tBlankLine,
+			tTransitionDash10, tBlankLine, tTransitionDash10, tBlankLine,
+			tTransitionDash10, tBlankLine, item(Title, "Section 2"), tSectionAdornment9,
+			tBlankLine, item(Paragraph, "Some text."), tEOF,
+		},
+	},
+	{
+		"transitions",
+		`----------
+
+----------
+
+----------`,
+		[]Token{
+			tTransitionDash10, tBlankLine, tTransitionDash10, tBlankLine,
+			tTransitionDash10, tEOF,
+		},
+	},
+	{
+		"paragraph, transition",
+		`A paragraph.
+
+----------
+
+`,
+		[]Token{item(Paragraph, "A paragraph."), tBlankLine, tTransitionDash10, tBlankLine, tEOF},
 	},
 }
 

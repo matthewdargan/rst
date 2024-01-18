@@ -397,8 +397,8 @@ func (l *Scanner) isHyperlinkSuffix() bool {
 
 // isHyperlinkURI reports whether the scanner is on a hyperlink URI.
 func (l *Scanner) isHyperlinkURI() bool {
-	tr := strings.TrimSuffix(l.input[l.pos:], "\n")
-	if isUnderscoreSuffix(tr) && !strings.ContainsFunc(tr, unicode.IsSpace) {
+	s := strings.TrimSuffix(l.input[l.pos:], "\n")
+	if isUnderscoreSuffix(s) && !strings.ContainsFunc(s, unicode.IsSpace) {
 		return false
 	}
 	switch l.types[0] {
@@ -445,13 +445,24 @@ func (l *Scanner) isTitle() bool {
 		l.pos += i
 		r = l.next()
 	}
-	isSection := l.isSectionAdornment(r)
+	ok := l.isSection(r)
 	l.pos, l.lastWidth = pos, lastWidth
-	return isSection
+	return ok
 }
 
 func notSpace(c rune) bool {
 	return !unicode.IsSpace(c)
+}
+
+const minSection = 2
+
+// isSection reports whether the scanner is on a section.
+func (l *Scanner) isSection(r rune) bool {
+	if !strings.ContainsRune(adornments, r) {
+		return false
+	}
+	s := strings.SplitN(l.input[l.pos-1:], "\n", 2)[0]
+	return len(s) >= minSection && s == strings.Repeat(string(r), len(s))
 }
 
 // isSectionAdornment reports whether the scanner is on a section adornment.
@@ -459,12 +470,22 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	if l.types[1] == Title || (l.types[1] == Space && l.types[0] == Title) {
 		return true
 	}
-	if !strings.ContainsRune(adornments, r) {
+	if !l.isSection(r) {
 		return false
 	}
-	s := strings.SplitN(l.input[l.pos-1:], "\n", 2)[0]
-	return len(s) > 1 && s == strings.Repeat(string(r), len(s))
+	if l.types[1] != BlankLine {
+		return true
+	}
+	pos, lastWidth := l.pos, l.lastWidth
+	for r != eof && r != '\n' {
+		r = l.next()
+	}
+	r = l.peek()
+	l.pos, l.lastWidth = pos, lastWidth
+	return r != '\n'
 }
+
+const minTransition = 4
 
 // isTransition reports whether the scanner is on a transition.
 func (l *Scanner) isTransition(r rune) bool {
@@ -482,7 +503,7 @@ func (l *Scanner) isTransition(r rune) bool {
 		return false
 	}
 	s := strings.TrimSuffix(l.input[l.pos-1:], "\n")
-	if len(s) < 4 || s != strings.Repeat(string(r), len(s)) {
+	if len(s) < minTransition || s != strings.Repeat(string(r), len(s)) {
 		return false
 	}
 	pos, lastWidth := l.pos, l.lastWidth
