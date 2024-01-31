@@ -35,6 +35,7 @@ const (
 	Transition                       // Transition separate other body elements
 	Paragraph                        // Paragraph is left-aligned text with no markup
 	Bullet                           // Bullet starts a bullet list
+	Enum                             // Enum starts an enumerated list
 	Comment                          // Comment starts a comment
 	HyperlinkStart                   // HyperlinkStart starts a hyperlink target
 	HyperlinkPrefix                  // HyperlinkPrefix prefixes a hyperlink target name
@@ -78,6 +79,7 @@ type Scanner struct {
 	start     int           // start position of this item
 	token     Token         // token to return to parser
 	types     [2]Type       // most recent scanned types
+	lastEnum  enum          // most recent enumeration
 }
 
 // loadLine reads the next line of input and stores it in (appends it to) the input.
@@ -136,6 +138,7 @@ func (l *Scanner) peek() rune {
 func (l *Scanner) emit(t Type) stateFn {
 	if t == BlankLine {
 		l.line++
+		l.lastEnum = enum{typ: none, val: 0}
 	}
 	text := l.input[l.start:l.pos]
 	l.token = Token{t, l.line, text}
@@ -182,11 +185,13 @@ func (l *Scanner) Next() Token {
 }
 
 const (
-	hyperlinkStart      = ".. _"
-	anonHyperlinkStart  = "__ "
-	anonHyperlinkPrefix = "__:"
-	bullets             = "*+-•‣⁃"
-	adornments          = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+	comment                   = ".."
+	hyperlinkStart            = ".. _"
+	anonHyperlinkStart        = "__ "
+	anonHyperlinkPrefix       = "__:"
+	bullets                   = "*+-•‣⁃"
+	adornments                = "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+	minSection, minTransition = 2, 4
 )
 
 // lexAny scans non-space items.
@@ -200,7 +205,7 @@ func lexAny(l *Scanner) stateFn {
 		return lexSpace
 	case l.isBullet(r):
 		return lexEndOfLine(l, Bullet)
-	case l.isComment(r):
+	case l.isComment():
 		return lexComment
 	case l.isTransition(r):
 		return lexUntilTerminator(l, Transition)
@@ -224,6 +229,8 @@ func lexAny(l *Scanner) stateFn {
 		return lexInlineReferenceClose
 	case l.isTitle():
 		return lexUntilTerminator(l, Title)
+	case l.isEnum(r):
+		return lexEnum
 	default:
 		return lexUntilTerminator(l, Paragraph)
 	}
@@ -345,15 +352,15 @@ func (l *Scanner) isBullet(r rune) bool {
 }
 
 // isComment reports whether the scanner is on a comment.
-func (l *Scanner) isComment(r rune) bool {
-	if r != '.' || l.types[1] == Title {
+func (l *Scanner) isComment() bool {
+	if l.types[1] == Title {
 		return false
 	}
 	s := l.input[l.start:]
 	if strings.HasPrefix(s, hyperlinkStart) && len(s) > len(hyperlinkStart) {
 		return false
 	}
-	return !strings.HasPrefix(s, "...")
+	return strings.HasPrefix(s, comment+" ") || strings.HasPrefix(s, comment+"\n")
 }
 
 // isHyperlinkStart reports whether the scanner is on a hyperlink start.
@@ -436,7 +443,7 @@ func (l *Scanner) isInlineReferenceClose() bool {
 // isTitle reports whether the scanner is on a title.
 func (l *Scanner) isTitle() bool {
 	pos, lastWidth := l.pos, l.lastWidth
-	r := l.next()
+	var r rune
 	for r != eof && r != '\n' {
 		r = l.next()
 	}
@@ -453,8 +460,6 @@ func (l *Scanner) isTitle() bool {
 func notSpace(c rune) bool {
 	return !unicode.IsSpace(c)
 }
-
-const minSection = 2
 
 // isSection reports whether the scanner is on a section.
 func (l *Scanner) isSection(r rune) bool {
@@ -485,8 +490,6 @@ func (l *Scanner) isSectionAdornment(r rune) bool {
 	return r != '\n'
 }
 
-const minTransition = 4
-
 // isTransition reports whether the scanner is on a transition.
 func (l *Scanner) isTransition(r rune) bool {
 	switch l.types[1] {
@@ -502,7 +505,7 @@ func (l *Scanner) isTransition(r rune) bool {
 	if !strings.ContainsRune(adornments, r) {
 		return false
 	}
-	s := strings.TrimSuffix(l.input[l.pos-1:], "\n")
+	s := strings.TrimSuffix(l.input[l.start:], "\n")
 	if len(s) < minTransition || s != strings.Repeat(string(r), len(s)) {
 		return false
 	}

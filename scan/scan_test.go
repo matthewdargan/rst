@@ -26,6 +26,7 @@ var (
 	tSpace2                = item(Space, "  ")
 	tSpace3                = item(Space, "   ")
 	tSpace4                = item(Space, "    ")
+	tSpace7                = item(Space, "       ")
 	tSectionAdornment2     = item(SectionAdornment, "==")
 	tSectionAdornment3     = item(SectionAdornment, "===")
 	tSectionAdornment5     = item(SectionAdornment, "=====")
@@ -1068,7 +1069,8 @@ Paragraph.`,
 
 Paragraph.`,
 		[]Token{
-			item(Paragraph, "1. Item 1."), item(Paragraph, "2. Item 2."), // TODO: Should be EnumListArabic, etc. once implemented
+			item(Enum, "1."), tSpace, item(Paragraph, "Item 1."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item 2."),
 			item(Title, "3. Numbered Title"), item(SectionAdornment, "================="), tBlankLine,
 			item(Paragraph, "Paragraph."), tEOF,
 		},
@@ -1343,6 +1345,510 @@ empty item above, no blank line`,
 			item(Bullet, "•"), tSpace, item(Paragraph, "BULLET"), tBlankLine,
 			item(Bullet, "‣"), tSpace, item(Paragraph, "TRIANGULAR BULLET"), tBlankLine,
 			item(Bullet, "⁃"), tSpace, item(Paragraph, "HYPHEN BULLET"), tEOF,
+		},
+	},
+	// enumerated lists
+	{
+		"enumerated list",
+		`1. Item one.
+
+2. Item two.
+
+3. Item three.`,
+		[]Token{
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one."), tBlankLine,
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two."), tBlankLine,
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"enumerated list, no blank lines",
+		`No blank lines between items:
+
+1. Item one.
+2. Item two.
+3. Item three.`,
+		[]Token{
+			item(Paragraph, "No blank lines between items:"), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"empty item",
+		`1.
+empty item above, no blank line`,
+		[]Token{item(Paragraph, "1."), item(Paragraph, "empty item above, no blank line"), tEOF},
+	},
+	{
+		"scrambled items",
+		`Scrambled:
+
+3. Item three.
+
+2. Item two.
+
+1. Item one.
+
+3. Item three.
+2. Item two.
+1. Item one.`,
+		[]Token{
+			item(Paragraph, "Scrambled:"), tBlankLine,
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three."), tBlankLine,
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two."), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one."), tBlankLine,
+			item(Paragraph, "3. Item three."), item(Paragraph, "2. Item two."),
+			item(Paragraph, "1. Item one."), tEOF,
+		},
+	},
+	{
+		"enumeration 3 skipped",
+		`Skipping item 3:
+
+1. Item 1.
+2. Item 2.
+4. Item 4.`,
+		[]Token{
+			item(Paragraph, "Skipping item 3:"), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "Item 1."),
+			item(Paragraph, "2. Item 2."), item(Paragraph, "4. Item 4."), tEOF,
+		},
+	},
+	{
+		"enumeration from 0",
+		`Start with non-ordinal-1:
+
+0. Item zero.
+1. Item one.
+2. Item two.
+3. Item three.
+
+And again:
+
+2. Item two.
+3. Item three.`,
+		[]Token{
+			item(Paragraph, "Start with non-ordinal-1:"), tBlankLine,
+			item(Enum, "0."), tSpace, item(Paragraph, "Item zero."),
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three."), tBlankLine,
+			item(Paragraph, "And again:"), tBlankLine,
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"multi-line enumeration",
+		`1. Item one: line 1,
+   line 2.
+2. Item two: line 1,
+   line 2.
+3. Item three: paragraph 1, line 1,
+   line 2.`,
+		[]Token{
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one: line 1,"),
+			tSpace3, item(Paragraph, "line 2."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two: line 1,"),
+			tSpace3, item(Paragraph, "line 2."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three: paragraph 1, line 1,"),
+			tSpace3, item(Paragraph, "line 2."), tEOF,
+		},
+	},
+	{
+		"different enumeration sequences",
+		`Different enumeration sequences:
+
+1. Item 1.
+2. Item 2.
+3. Item 3.
+
+A. Item A.
+B. Item B.
+C. Item C.
+
+a. Item a.
+b. Item b.
+c. Item c.
+
+I. Item I.
+II. Item II.
+III. Item III.
+
+i. Item i.
+ii. Item ii.
+iii. Item iii.`,
+		[]Token{
+			item(Paragraph, "Different enumeration sequences:"), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "Item 1."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item 2."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item 3."), tBlankLine,
+			item(Enum, "A."), tSpace, item(Paragraph, "Item A."),
+			item(Enum, "B."), tSpace, item(Paragraph, "Item B."),
+			item(Enum, "C."), tSpace, item(Paragraph, "Item C."), tBlankLine,
+			item(Enum, "a."), tSpace, item(Paragraph, "Item a."),
+			item(Enum, "b."), tSpace, item(Paragraph, "Item b."),
+			item(Enum, "c."), tSpace, item(Paragraph, "Item c."), tBlankLine,
+			item(Enum, "I."), tSpace, item(Paragraph, "Item I."),
+			item(Enum, "II."), tSpace, item(Paragraph, "Item II."),
+			item(Enum, "III."), tSpace, item(Paragraph, "Item III."), tBlankLine,
+			item(Enum, "i."), tSpace, item(Paragraph, "Item i."),
+			item(Enum, "ii."), tSpace, item(Paragraph, "Item ii."),
+			item(Enum, "iii."), tSpace, item(Paragraph, "Item iii."), tEOF,
+		},
+	},
+	{
+		"bad roman numerals",
+		`Bad Roman numerals:
+
+i. i
+
+ii. ii
+
+iii. iii
+
+iiii. iiii
+      second line
+
+(LCD) is an acronym made up of Roman numerals
+
+(livid) is a word made up of Roman numerals
+
+(CIVIL) is another such word
+
+(I) I
+
+(IVXLCDM) IVXLCDM`,
+		[]Token{
+			item(Paragraph, "Bad Roman numerals:"), tBlankLine,
+			item(Enum, "i."), tSpace, item(Paragraph, "i"), tBlankLine,
+			item(Enum, "ii."), tSpace, item(Paragraph, "ii"), tBlankLine,
+			item(Enum, "iii."), tSpace, item(Paragraph, "iii"), tBlankLine,
+			item(Paragraph, "iiii. iiii"), // TODO: Should be DefinitionList once implemented
+			item(Space, "      "), item(Paragraph, "second line"), tBlankLine,
+			item(Paragraph, "(LCD) is an acronym made up of Roman numerals"), tBlankLine,
+			item(Paragraph, "(livid) is a word made up of Roman numerals"), tBlankLine,
+			item(Paragraph, "(CIVIL) is another such word"), tBlankLine,
+			item(Enum, "(I)"), tSpace, item(Paragraph, "I"), tBlankLine,
+			item(Paragraph, "(IVXLCDM) IVXLCDM"), tEOF,
+		},
+	},
+	{
+		"potentially ambiguous enumerations",
+		`Potentially ambiguous cases:
+
+A. Item A.
+B. Item B.
+C. Item C.
+
+I. Item I.
+II. Item II.
+III. Item III.
+
+a. Item a.
+b. Item b.
+c. Item c.
+
+i. Item i.
+ii. Item ii.
+iii. Item iii.
+
+Phew! Safe!`,
+		[]Token{
+			item(Paragraph, "Potentially ambiguous cases:"), tBlankLine,
+			item(Enum, "A."), tSpace, item(Paragraph, "Item A."),
+			item(Enum, "B."), tSpace, item(Paragraph, "Item B."),
+			item(Enum, "C."), tSpace, item(Paragraph, "Item C."), tBlankLine,
+			item(Enum, "I."), tSpace, item(Paragraph, "Item I."),
+			item(Enum, "II."), tSpace, item(Paragraph, "Item II."),
+			item(Enum, "III."), tSpace, item(Paragraph, "Item III."), tBlankLine,
+			item(Enum, "a."), tSpace, item(Paragraph, "Item a."),
+			item(Enum, "b."), tSpace, item(Paragraph, "Item b."),
+			item(Enum, "c."), tSpace, item(Paragraph, "Item c."), tBlankLine,
+			item(Enum, "i."), tSpace, item(Paragraph, "Item i."),
+			item(Enum, "ii."), tSpace, item(Paragraph, "Item ii."),
+			item(Enum, "iii."), tSpace, item(Paragraph, "Item iii."), tBlankLine,
+			item(Paragraph, "Phew! Safe!"), tEOF,
+		},
+	},
+	{
+		"ambiguous enumerations",
+		`Definitely ambiguous:
+
+A. Item A.
+B. Item B.
+C. Item C.
+D. Item D.
+E. Item E.
+F. Item F.
+G. Item G.
+H. Item H.
+I. Item I.
+II. Item II.
+III. Item III.
+
+a. Item a.
+b. Item b.
+c. Item c.
+d. Item d.
+e. Item e.
+f. Item f.
+g. Item g.
+h. Item h.
+i. Item i.
+ii. Item ii.
+iii. Item iii.`,
+		[]Token{
+			item(Paragraph, "Definitely ambiguous:"), tBlankLine,
+			item(Enum, "A."), tSpace, item(Paragraph, "Item A."),
+			item(Enum, "B."), tSpace, item(Paragraph, "Item B."),
+			item(Enum, "C."), tSpace, item(Paragraph, "Item C."),
+			item(Enum, "D."), tSpace, item(Paragraph, "Item D."),
+			item(Enum, "E."), tSpace, item(Paragraph, "Item E."),
+			item(Enum, "F."), tSpace, item(Paragraph, "Item F."),
+			item(Enum, "G."), tSpace, item(Paragraph, "Item G."),
+			item(Enum, "H."), tSpace, item(Paragraph, "Item H."),
+			item(Enum, "I."), tSpace, item(Paragraph, "Item I."),
+			item(Enum, "II."), tSpace, item(Paragraph, "Item II."),
+			item(Enum, "III."), tSpace, item(Paragraph, "Item III."), tBlankLine,
+			item(Enum, "a."), tSpace, item(Paragraph, "Item a."),
+			item(Enum, "b."), tSpace, item(Paragraph, "Item b."),
+			item(Enum, "c."), tSpace, item(Paragraph, "Item c."),
+			item(Enum, "d."), tSpace, item(Paragraph, "Item d."),
+			item(Enum, "e."), tSpace, item(Paragraph, "Item e."),
+			item(Enum, "f."), tSpace, item(Paragraph, "Item f."),
+			item(Enum, "g."), tSpace, item(Paragraph, "Item g."),
+			item(Enum, "h."), tSpace, item(Paragraph, "Item h."),
+			item(Enum, "i."), tSpace, item(Paragraph, "Item i."),
+			item(Enum, "ii."), tSpace, item(Paragraph, "Item ii."),
+			item(Enum, "iii."), tSpace, item(Paragraph, "Item iii."), tEOF,
+		},
+	},
+	{
+		"different enumeration formats",
+		`Different enumeration formats:
+
+1. Item 1.
+2. Item 2.
+3. Item 3.
+
+1) Item 1).
+2) Item 2).
+3) Item 3).
+
+(1) Item (1).
+(2) Item (2).
+(3) Item (3).`,
+		[]Token{
+			item(Paragraph, "Different enumeration formats:"), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "Item 1."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item 2."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item 3."), tBlankLine,
+			item(Enum, "1)"), tSpace, item(Paragraph, "Item 1)."),
+			item(Enum, "2)"), tSpace, item(Paragraph, "Item 2)."),
+			item(Enum, "3)"), tSpace, item(Paragraph, "Item 3)."), tBlankLine,
+			item(Enum, "(1)"), tSpace, item(Paragraph, "Item (1)."),
+			item(Enum, "(2)"), tSpace, item(Paragraph, "Item (2)."),
+			item(Enum, "(3)"), tSpace, item(Paragraph, "Item (3)."), tEOF,
+		},
+	},
+	{
+		"nested enumerated lists",
+		`Nested enumerated lists:
+
+1. Item 1.
+
+   A) Item A).
+   B) Item B).
+   C) Item C).
+
+2. Item 2.
+
+   (a) Item (a).
+
+       I) Item I).
+       II) Item II).
+       III) Item III).
+
+   (b) Item (b).
+
+   (c) Item (c).
+
+       (i) Item (i).
+       (ii) Item (ii).
+       (iii) Item (iii).
+
+3. Item 3.`,
+		[]Token{
+			item(Paragraph, "Nested enumerated lists:"), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "Item 1."), tBlankLine,
+			tSpace3, item(Enum, "A)"), tSpace, item(Paragraph, "Item A)."),
+			tSpace3, item(Enum, "B)"), tSpace, item(Paragraph, "Item B)."),
+			tSpace3, item(Enum, "C)"), tSpace, item(Paragraph, "Item C)."), tBlankLine,
+			item(Enum, "2."), tSpace, item(Paragraph, "Item 2."), tBlankLine,
+			tSpace3, item(Enum, "(a)"), tSpace, item(Paragraph, "Item (a)."), tBlankLine,
+			tSpace7, item(Enum, "I)"), tSpace, item(Paragraph, "Item I)."),
+			tSpace7, item(Enum, "II)"), tSpace, item(Paragraph, "Item II)."),
+			tSpace7, item(Enum, "III)"), tSpace, item(Paragraph, "Item III)."), tBlankLine,
+			tSpace3, item(Enum, "(b)"), tSpace, item(Paragraph, "Item (b)."), tBlankLine,
+			tSpace3, item(Enum, "(c)"), tSpace, item(Paragraph, "Item (c)."), tBlankLine,
+			tSpace7, item(Enum, "(i)"), tSpace, item(Paragraph, "Item (i)."),
+			tSpace7, item(Enum, "(ii)"), tSpace, item(Paragraph, "Item (ii)."),
+			tSpace7, item(Enum, "(iii)"), tSpace, item(Paragraph, "Item (iii)."), tBlankLine,
+			item(Enum, "3."), tSpace, item(Paragraph, "Item 3."), tEOF,
+		},
+	},
+	{
+		"non-breaking space",
+		`A. Einstein was a great influence on
+B. Physicist, who was a colleague of
+C. Chemist.  They all worked in
+Princeton, NJ.
+
+Using a non-breaking space as a workaround:
+
+` + "A.\u00a0Einstein was a great influence on" + `
+B. Physicist, who was a colleague of
+C. Chemist.  They all worked in
+Princeton, NJ.`,
+		[]Token{
+			item(Enum, "A."), tSpace, item(Paragraph, "Einstein was a great influence on"),
+			item(Enum, "B."), tSpace, item(Paragraph, "Physicist, who was a colleague of"),
+			item(Paragraph, "C. Chemist.  They all worked in"),
+			item(Paragraph, "Princeton, NJ."), tBlankLine,
+			item(Paragraph, "Using a non-breaking space as a workaround:"), tBlankLine,
+			item(Paragraph, "A.\u00a0Einstein was a great influence on"),
+			item(Paragraph, "B. Physicist, who was a colleague of"),
+			item(Paragraph, "C. Chemist.  They all worked in"),
+			item(Paragraph, "Princeton, NJ."), tEOF,
+		},
+	},
+	{
+		"multi-line enumerated list",
+		`1. Item one: line 1,
+   line 2.
+2. Item two: line 1,
+  line 2.
+3. Item three: paragraph 1, line 1,
+ line 2.
+
+   Paragraph 2.`,
+		[]Token{
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one: line 1,"),
+			tSpace3, item(Paragraph, "line 2."),
+			item(Enum, "2."), tSpace, item(Paragraph, "Item two: line 1,"),
+			tSpace2, item(Paragraph, "line 2."),
+			item(Enum, "3."), tSpace, item(Paragraph, "Item three: paragraph 1, line 1,"),
+			tSpace, item(Paragraph, "line 2."), tBlankLine,
+			tSpace3, item(Paragraph, "Paragraph 2."), tEOF,
+		},
+	},
+	{
+		"arabic auto-enumeration",
+		`1. Item one.
+
+#. Item two.
+
+#. Item three.`,
+		[]Token{
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one."), tBlankLine,
+			item(Enum, "#."), tSpace, item(Paragraph, "Item two."), tBlankLine,
+			item(Enum, "#."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"letter auto-enumeration",
+		`a. Item one.
+#. Item two.
+#. Item three.`,
+		[]Token{
+			item(Enum, "a."), tSpace, item(Paragraph, "Item one."),
+			item(Enum, "#."), tSpace, item(Paragraph, "Item two."),
+			item(Enum, "#."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"numeral auto-enumeration",
+		`i. Item one.
+ii. Item two.
+#. Item three.`,
+		[]Token{
+			item(Enum, "i."), tSpace, item(Paragraph, "Item one."),
+			item(Enum, "ii."), tSpace, item(Paragraph, "Item two."),
+			item(Enum, "#."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"auto-enumeration",
+		`#. Item one.
+#. Item two.
+#. Item three.`,
+		[]Token{
+			item(Enum, "#."), tSpace, item(Paragraph, "Item one."),
+			item(Enum, "#."), tSpace, item(Paragraph, "Item two."),
+			item(Enum, "#."), tSpace, item(Paragraph, "Item three."), tEOF,
+		},
+	},
+	{
+		"arabic, auto-enumeration, arabic",
+		`1. Item one.
+#. Item two.
+3. Item three.`,
+		[]Token{
+			item(Enum, "1."), tSpace, item(Paragraph, "Item one."),
+			item(Paragraph, "#. Item two."), item(Paragraph, "3. Item three."), tEOF,
+		},
+	},
+	{
+		"invalid letters",
+		`z.
+x`,
+		[]Token{item(Paragraph, "z."), item(Paragraph, "x"), tEOF},
+	},
+	{
+		"enumerated lists, different indentations",
+		`3-space indent, with a trailing space:
+
+1. 
+   foo
+
+3-space indent, no trailing space:
+
+1.
+   foo
+
+2-space indent:
+
+1.
+  foo
+
+1-space indent:
+
+1.
+ foo
+
+0-space indent, not a list item:
+
+1.
+foo
+
+No item content:
+
+1.`,
+		[]Token{
+			item(Paragraph, "3-space indent, with a trailing space:"), tBlankLine,
+			item(Enum, "1."), item(Space, " \n   "), item(Paragraph, "foo"), tBlankLine,
+			item(Paragraph, "3-space indent, no trailing space:"), tBlankLine,
+			item(Enum, "1."), tSpace3, item(Paragraph, "foo"), tBlankLine,
+			item(Paragraph, "2-space indent:"), tBlankLine,
+			item(Enum, "1."), tSpace2, item(Paragraph, "foo"), tBlankLine,
+			item(Paragraph, "1-space indent:"), tBlankLine,
+			item(Enum, "1."), tSpace, item(Paragraph, "foo"), tBlankLine,
+			item(Paragraph, "0-space indent, not a list item:"), tBlankLine,
+			item(Paragraph, "1."), item(Paragraph, "foo"), tBlankLine,
+			item(Paragraph, "No item content:"), tBlankLine, item(Enum, "1."), tEOF,
 		},
 	},
 	// transitions
