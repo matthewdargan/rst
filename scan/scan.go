@@ -36,6 +36,8 @@ const (
 	Paragraph                        // Paragraph is left-aligned text with no markup
 	Bullet                           // Bullet starts a bullet list
 	Enum                             // Enum starts an enumerated list
+	BlockQuote                       // BlockQuote indents a text block relative to the preceding text
+	Attribution                      // Attribution is a text block that ends a block quote
 	Comment                          // Comment starts a comment
 	HyperlinkStart                   // HyperlinkStart starts a hyperlink target
 	HyperlinkPrefix                  // HyperlinkPrefix prefixes a hyperlink target name
@@ -67,19 +69,21 @@ type stateFn func(*Scanner) stateFn
 
 // Scanner holds the state of the scanner.
 type Scanner struct {
-	r         io.ByteReader // reads input bytes
-	done      bool          // are we done scanning?
-	name      string        // name of the input; used only for error reports
-	buf       []byte        // I/O buffer, re-used
-	input     string        // line of text being scanned
-	lastRune  rune          // most recent return from next()
-	lastWidth int           // size of that rune
-	line      int           // line number in input
-	pos       int           // current position in the input
-	start     int           // start position of this item
-	token     Token         // token to return to parser
-	types     [2]Type       // most recent scanned types
-	lastEnum  enum          // most recent enumeration
+	r          io.ByteReader // reads input bytes
+	done       bool          // are we done scanning?
+	name       string        // name of the input; used only for error reports
+	buf        []byte        // I/O buffer, re-used
+	input      string        // line of text being scanned
+	lastRune   rune          // most recent return from next()
+	lastWidth  int           // size of that rune
+	line       int           // line number in input
+	pos        int           // current position in the input
+	start      int           // start position of this item
+	token      Token         // token to return to parser
+	types      [2]Type       // most recent scanned types
+	indent     int           // current indentation level in the input
+	lastMarkup Type          // most recent markup type
+	lastEnum   enum          // most recent enumeration
 }
 
 // loadLine reads the next line of input and stores it in (appends it to) the input.
@@ -140,12 +144,20 @@ func (l *Scanner) emit(t Type) stateFn {
 		l.line++
 		l.lastEnum = enum{typ: none, val: 0}
 	}
+	if l.start == 0 && notSpace(rune(l.input[l.start])) {
+		l.indent = 0
+	}
 	text := l.input[l.start:l.pos]
 	l.token = Token{t, l.line, text}
 	l.types[0] = l.types[1]
 	l.types[1] = t
 	l.start = l.pos
 	return nil
+}
+
+// notSpace reports whether the rune is not a space character.
+func notSpace(c rune) bool {
+	return !unicode.IsSpace(c)
 }
 
 // ignore skips over the pending input before this point.
@@ -157,7 +169,7 @@ func (l *Scanner) ignore() {
 }
 
 // errorf returns an error token and empties the input.
-func (l *Scanner) errorf(format string, args ...interface{}) stateFn {
+func (l *Scanner) errorf(format string, args ...any) stateFn {
 	l.token = Token{Error, l.start, fmt.Sprintf(format, args...)}
 	l.start = 0
 	l.pos = 0
@@ -194,23 +206,27 @@ const (
 	minSection, minTransition = 2, 4
 )
 
-// lexAny scans non-space items.
+// lexAny scans any item.
 func lexAny(l *Scanner) stateFn {
 	switch r := l.next(); {
 	case r == eof:
 		return nil
 	case r == '\n':
-		return l.emit(BlankLine)
+		return lexBlankLine
+	case l.isBlockQuote():
+		return lexSpace(l, BlockQuote)
+	case l.isAttribution():
+		return lexAttribution
 	case unicode.IsSpace(r):
-		return lexSpace
+		return lexSpace(l, Space)
 	case l.isBullet(r):
-		return lexEndOfLine(l, Bullet)
+		return lexBullet
 	case l.isComment():
 		return lexComment
 	case l.isTransition(r):
-		return lexUntilTerminator(l, Transition)
+		return lexTransition
 	case l.isSectionAdornment(r):
-		return lexUntilTerminator(l, SectionAdornment)
+		return lexSection
 	case l.isHyperlinkStart():
 		return lexHyperlinkStart
 	case l.isHyperlinkPrefix():
@@ -228,15 +244,15 @@ func lexAny(l *Scanner) stateFn {
 	case l.isInlineReferenceClose():
 		return lexInlineReferenceClose
 	case l.isTitle():
-		return lexUntilTerminator(l, Title)
+		return lexTitle
 	case l.isEnum(r):
 		return lexEnum
 	default:
-		return lexUntilTerminator(l, Paragraph)
+		return lexParagraph
 	}
 }
 
-// lexEndOfLine scans a lex item and ignores an end-of-line character if present.
+// lexEndOfLine scans an item and ignores an end-of-line character if present.
 func lexEndOfLine(l *Scanner, typ Type) stateFn {
 	i := l.emit(typ)
 	if l.peek() == '\n' {
@@ -246,7 +262,7 @@ func lexEndOfLine(l *Scanner, typ Type) stateFn {
 	return i
 }
 
-// lexUntilTerminator scans a lex item until a newline or end-of-line character.
+// lexUntilTerminator scans an item until a newline or end-of-line character.
 func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 	for {
 		switch l.peek() {
@@ -259,24 +275,70 @@ func lexUntilTerminator(l *Scanner, typ Type) stateFn {
 	}
 }
 
+// lexBlankLine scans a blank line.
+func lexBlankLine(l *Scanner) stateFn {
+	if l.types[1] == Comment {
+		l.lastMarkup = EOF
+	}
+	return l.emit(BlankLine)
+}
+
 // lexSpace scans a run of space characters.
-func lexSpace(l *Scanner) stateFn {
-	for unicode.IsSpace(l.peek()) {
+func lexSpace(l *Scanner, typ Type) stateFn {
+	var i int
+	for i = 1; unicode.IsSpace(l.peek()); i++ {
 		l.next()
 	}
-	return l.emit(Space)
+	if l.start == 0 || l.input[l.start-1] == '\n' {
+		l.indent = i
+	}
+	return l.emit(typ)
+}
+
+// lexAttribution scans an attribution.
+func lexAttribution(l *Scanner) stateFn {
+	l.indent = 0
+	return lexUntilTerminator(l, Attribution)
+}
+
+// lexBullet scans a bullet.
+func lexBullet(l *Scanner) stateFn {
+	l.lastMarkup = Bullet
+	return lexEndOfLine(l, Bullet)
 }
 
 // lexComment scans a comment.
 func lexComment(l *Scanner) stateFn {
+	l.lastMarkup = Comment
 	l.next()
 	return lexEndOfLine(l, Comment)
 }
 
+// lexTransition scans a transition.
+func lexTransition(l *Scanner) stateFn {
+	l.lastMarkup = Transition
+	return lexUntilTerminator(l, Transition)
+}
+
+// lexSection scans a section adornment.
+func lexSection(l *Scanner) stateFn {
+	l.lastMarkup = SectionAdornment
+	return lexUntilTerminator(l, SectionAdornment)
+}
+
 // lexHyperlinkStart scans a hyperlink start.
 func lexHyperlinkStart(l *Scanner) stateFn {
+	l.lastMarkup = HyperlinkStart
 	l.next()
 	return l.emit(HyperlinkStart)
+}
+
+// lexHyperlinkPrefix scans a hyperlink prefix.
+func lexHyperlinkPrefix(l *Scanner) stateFn {
+	if strings.HasPrefix(l.input[l.start:], anonHyperlinkPrefix) {
+		l.next()
+	}
+	return l.emit(HyperlinkPrefix)
 }
 
 // lexQuote scans a quote.
@@ -290,14 +352,6 @@ func lexQuote(l *Scanner) stateFn {
 		return lexInlineReferenceClose
 	}
 	return l.errorf("expected hyperlink or inline reference before quote")
-}
-
-// lexHyperlinkPrefix scans a hyperlink prefix.
-func lexHyperlinkPrefix(l *Scanner) stateFn {
-	if strings.HasPrefix(l.input[l.start:], anonHyperlinkPrefix) {
-		l.next()
-	}
-	return l.emit(HyperlinkPrefix)
 }
 
 // lexHyperlinkName scans a hyperlink name.
@@ -346,6 +400,63 @@ func lexInlineReferenceClose(l *Scanner) stateFn {
 	return lexEndOfLine(l, InlineReferenceClose)
 }
 
+// lexTitle scans a title.
+func lexTitle(l *Scanner) stateFn {
+	l.lastMarkup = Title
+	return lexUntilTerminator(l, Title)
+}
+
+// lexParagraph scans a paragraph.
+func lexParagraph(l *Scanner) stateFn {
+	if l.start == 0 && l.indent == 0 {
+		l.lastMarkup = EOF
+	}
+	return lexUntilTerminator(l, Paragraph)
+}
+
+// isBlockQuote reports whether the scanner is on a block quote.
+func (l *Scanner) isBlockQuote() bool {
+	if l.lastMarkup != EOF {
+		return false
+	}
+	switch l.types[0] {
+	case Paragraph, Attribution, Comment:
+	default:
+		if l.types[1] != Paragraph || (l.types[1] != BlankLine && l.indent > 0) {
+			return false
+		}
+	}
+	i := strings.IndexFunc(l.input[l.start:], notSpace)
+	return i > 0 && i != l.indent
+}
+
+// isAttribution reports whether the scanner is on an attribution.
+func (l *Scanner) isAttribution() bool {
+	if l.types[0] == Attribution && l.types[1] == Space {
+		return true
+	}
+	if l.types[1] == BlockQuote {
+		return false
+	}
+	s := l.input[l.start:]
+	if !strings.HasPrefix(s, "--") && !strings.HasPrefix(s, "—") {
+		return false
+	}
+	s = strings.TrimSpace(strings.TrimLeft(s, "-"))
+	if len(s) == 0 || strings.ContainsAny(s, "-") {
+		return false
+	}
+	pos, lastWidth := l.pos, l.lastWidth
+	var r rune
+	for r != eof && r != '\n' {
+		r = l.next()
+	}
+	l.next()
+	i := strings.IndexFunc(l.input[l.pos-1:], notSpace)
+	l.pos, l.lastWidth = pos, lastWidth
+	return i < 1 || i == l.indent
+}
+
 // isBullet reports whether the scanner is on a bullet.
 func (l *Scanner) isBullet(r rune) bool {
 	return strings.ContainsRune(bullets, r) && unicode.IsSpace(l.peek())
@@ -361,6 +472,65 @@ func (l *Scanner) isComment() bool {
 		return false
 	}
 	return strings.HasPrefix(s, comment+" ") || strings.HasPrefix(s, comment+"\n")
+}
+
+// isTransition reports whether the scanner is on a transition.
+func (l *Scanner) isTransition(r rune) bool {
+	switch l.types[1] {
+	case EOF, BlankLine:
+	case Space:
+		if l.types[0] != BlankLine {
+			return false
+		}
+	default:
+		return false
+	}
+	if !strings.ContainsRune(adornments, r) {
+		return false
+	}
+	s := strings.TrimSuffix(l.input[l.start:], "\n")
+	if len(s) < minTransition || s != strings.Repeat(string(r), len(s)) {
+		return false
+	}
+	pos, lastWidth := l.pos, l.lastWidth
+	for r != eof && r != '\n' {
+		r = l.next()
+	}
+	r = l.peek()
+	l.pos, l.lastWidth = pos, lastWidth
+	if r != eof && r != '\n' {
+		return false
+	}
+	return true
+}
+
+// isSectionAdornment reports whether the scanner is on a section adornment.
+func (l *Scanner) isSectionAdornment(r rune) bool {
+	if l.lastMarkup == Title {
+		return true
+	}
+	if !l.isSection(r) {
+		return false
+	}
+	if l.types[1] != BlankLine {
+		return true
+	}
+	pos, lastWidth := l.pos, l.lastWidth
+	for r != eof && r != '\n' {
+		r = l.next()
+	}
+	r = l.peek()
+	l.pos, l.lastWidth = pos, lastWidth
+	return r != '\n'
+}
+
+// isSection reports whether the scanner is on a section.
+func (l *Scanner) isSection(r rune) bool {
+	if !strings.ContainsRune(adornments, r) {
+		return false
+	}
+	s := strings.SplitN(l.input[l.pos-1:], "\n", 2)[0]
+	return len(s) >= minSection && s == strings.Repeat(string(r), len(s))
 }
 
 // isHyperlinkStart reports whether the scanner is on a hyperlink start.
@@ -455,68 +625,4 @@ func (l *Scanner) isTitle() bool {
 	ok := l.isSection(r)
 	l.pos, l.lastWidth = pos, lastWidth
 	return ok
-}
-
-func notSpace(c rune) bool {
-	return !unicode.IsSpace(c)
-}
-
-// isSection reports whether the scanner is on a section.
-func (l *Scanner) isSection(r rune) bool {
-	if !strings.ContainsRune(adornments, r) {
-		return false
-	}
-	s := strings.SplitN(l.input[l.pos-1:], "\n", 2)[0]
-	return len(s) >= minSection && s == strings.Repeat(string(r), len(s))
-}
-
-// isSectionAdornment reports whether the scanner is on a section adornment.
-func (l *Scanner) isSectionAdornment(r rune) bool {
-	if l.types[1] == Title || (l.types[1] == Space && l.types[0] == Title) {
-		return true
-	}
-	if !l.isSection(r) {
-		return false
-	}
-	if l.types[1] != BlankLine {
-		return true
-	}
-	pos, lastWidth := l.pos, l.lastWidth
-	for r != eof && r != '\n' {
-		r = l.next()
-	}
-	r = l.peek()
-	l.pos, l.lastWidth = pos, lastWidth
-	return r != '\n'
-}
-
-// isTransition reports whether the scanner is on a transition.
-func (l *Scanner) isTransition(r rune) bool {
-	switch l.types[1] {
-	case EOF, BlankLine:
-		break
-	case Space:
-		if l.types[0] != BlankLine {
-			return false
-		}
-	default:
-		return false
-	}
-	if !strings.ContainsRune(adornments, r) {
-		return false
-	}
-	s := strings.TrimSuffix(l.input[l.start:], "\n")
-	if len(s) < minTransition || s != strings.Repeat(string(r), len(s)) {
-		return false
-	}
-	pos, lastWidth := l.pos, l.lastWidth
-	for r != eof && r != '\n' {
-		r = l.next()
-	}
-	r = l.peek()
-	l.pos, l.lastWidth = pos, lastWidth
-	if r != eof && r != '\n' {
-		return false
-	}
-	return true
 }

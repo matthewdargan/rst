@@ -13,6 +13,7 @@ import (
 
 // lexEnum scans an enumeration.
 func lexEnum(l *Scanner) stateFn {
+	l.lastMarkup = Enum
 	for {
 		switch r := l.peek(); {
 		case r == '\n':

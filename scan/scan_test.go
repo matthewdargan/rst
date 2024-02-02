@@ -43,6 +43,10 @@ var (
 	tBulletAsterisk        = item(Bullet, "*")
 	tBulletPlus            = item(Bullet, "+")
 	tBulletDash            = item(Bullet, "-")
+	tBlockQuote2           = item(BlockQuote, "  ")
+	tBlockQuote3           = item(BlockQuote, "   ")
+	tBlockQuote4           = item(BlockQuote, "    ")
+	tBlockQuote6           = item(BlockQuote, "      ")
 	tComment               = item(Comment, "..")
 	tHyperlinkStart        = item(HyperlinkStart, "..")
 	tAnonHyperlinkStart    = item(HyperlinkStart, "__")
@@ -196,10 +200,8 @@ the parser from recognizing a substitution definition.`,
     A block quote.`,
 		[]Token{
 			tComment, tSpace, item(Paragraph, "Next is an empty comment, which serves to end this comment and"),
-			tSpace3, item(Paragraph, "prevents the following block quote being swallowed up."),
-			tBlankLine, tComment, tBlankLine, tSpace4,
-			item(Paragraph, "A block quote."), // TODO: Should be BlockQuote once implemented
-			tEOF,
+			tSpace3, item(Paragraph, "prevents the following block quote being swallowed up."), tBlankLine,
+			tComment, tBlankLine, tBlockQuote4, item(Paragraph, "A block quote."), tEOF,
 		},
 	},
 	{
@@ -213,7 +215,7 @@ term 2
   definition 2`,
 		[]Token{
 			item(Paragraph, "term 1"), // TODO: Should be DefinitionTerm once implemented
-			tSpace2, item(Paragraph, "definition 1"), tBlankLine,
+			tBlockQuote2, item(Paragraph, "definition 1"), tBlankLine,
 			tSpace2, tComment, tSpace, item(Paragraph, "a comment"), tBlankLine,
 			item(Paragraph, "term 2"), tSpace2, item(Paragraph, "definition 2"), tEOF,
 		},
@@ -229,9 +231,9 @@ term 2
   definition 2`,
 		[]Token{
 			item(Paragraph, "term 1"), // TODO: Should be DefinitionTerm once implemented
-			tSpace2, item(Paragraph, "definition 1"), tBlankLine,
+			tBlockQuote2, item(Paragraph, "definition 1"), tBlankLine,
 			tComment, tSpace, item(Paragraph, "a comment"), tBlankLine,
-			item(Paragraph, "term 2"), tSpace2, item(Paragraph, "definition 2"), tEOF,
+			item(Paragraph, "term 2"), tBlockQuote2, item(Paragraph, "definition 2"), tEOF,
 		},
 	},
 	{
@@ -499,7 +501,7 @@ Title
 		[]Token{
 			item(Paragraph, "Duplicate implicit/directive targets."), tBlankLine,
 			item(Title, "Title"), tSectionAdornment5,
-			tBlankLine, tComment, tSpace, item(Paragraph, "target-notes::"), // TODO: Should be Directive once implemented
+			tBlankLine, tComment, tSpace, item(Paragraph, "target-notes::"), // TODO: Should be Directive
 			tSpace3, item(Paragraph, ":name: title"), tEOF,
 		},
 	},
@@ -544,7 +546,7 @@ First.
 			item(Paragraph, "Duplicate explicit/directive targets."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "title"), tHyperlinkSuffix,
 			tBlankLine, item(Paragraph, "First."), tBlankLine,
-			tComment, tSpace, item(Paragraph, "rubric:: this is a title too"), // TODO: Should be Directive once implemented
+			tComment, tSpace, item(Paragraph, "rubric:: this is a title too"), // TODO: Should be Directive
 			tSpace3, item(Paragraph, ":name: title"), tBlankLine, tEOF,
 		},
 	},
@@ -573,13 +575,13 @@ Explicit internal target.
 			item(Paragraph, "Duplicate targets:"), tBlankLine,
 			item(Title, "Target"), item(SectionAdornment, "======"),
 			tBlankLine, item(Paragraph, "Implicit section header target."), tBlankLine,
-			tComment, tSpace, item(Paragraph, "[TARGET] Citation target."), // TODO: Should be Citation once implemented
-			tBlankLine, tComment, tSpace, item(Paragraph, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote once implemented
+			tComment, tSpace, item(Paragraph, "[TARGET] Citation target."), // TODO: Should be Citation
+			tBlankLine, tComment, tSpace, item(Paragraph, "[#target] Autonumber-labeled footnote target."), // TODO: Should be Footnote
 			tBlankLine, tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
 			tBlankLine, item(Paragraph, "Explicit internal target."), tBlankLine,
 			tHyperlinkStart, tSpace, tHyperlinkPrefix, item(HyperlinkName, "target"), tHyperlinkSuffix,
 			tSpace, item(HyperlinkURI, "Explicit_external_target"), tBlankLine,
-			tComment, tSpace, item(Paragraph, "rubric:: directive with target"), // TODO: Should be Directive once implemented
+			tComment, tSpace, item(Paragraph, "rubric:: directive with target"), // TODO: Should be Directive
 			tSpace3, item(Paragraph, ":name: Target"), tEOF,
 		},
 	},
@@ -773,8 +775,9 @@ Paragraph.`,
     -----
     Paragraph.`,
 		[]Token{
-			item(Paragraph, "Test unexpected section titles."), tBlankLine, tSpace4, item(Title, "Title"),
-			tSpace4, tSectionAdornment5, tSpace4, item(Paragraph, "Paragraph."), tBlankLine,
+			item(Paragraph, "Test unexpected section titles."), tBlankLine,
+			tBlockQuote4, item(Title, "Title"), tSpace4, tSectionAdornment5,
+			tSpace4, item(Paragraph, "Paragraph."), tBlankLine,
 			tSpace4, tSectionAdornmentDash5, tSpace4, item(Title, "Title"), tSpace4, tSectionAdornmentDash5,
 			tSpace4, item(Paragraph, "Paragraph."), tEOF,
 		},
@@ -1044,7 +1047,7 @@ Paragraph 4.`,
 
 Paragraph.`,
 		[]Token{
-			item(Title, "Title containing *inline* ``markup``"), // TODO: Should be InlineEmphasisOpen, etc. once implemented
+			item(Title, "Title containing *inline* ``markup``"), // TODO: Should be InlineEmphasisOpen, etc.
 			item(SectionAdornment, "===================================="), tBlankLine,
 			item(Paragraph, "Paragraph."), tEOF,
 		},
@@ -1125,7 +1128,7 @@ ABC`,
 		`==
   Not a title: a definition list item.`,
 		[]Token{
-			tSectionAdornment2, tSpace2, item(Paragraph, "Not a title: a definition list item."), // TODO: Should be DefinitionList once implemented
+			tSectionAdornment2, tSpace2, item(Paragraph, "Not a title: a definition list item."), // TODO: Should be DefinitionList
 			tEOF,
 		},
 	},
@@ -1141,7 +1144,7 @@ ABC`,
   The next line will trigger a warning:
 ==`,
 		[]Token{
-			tSectionAdornment2, tSpace2, item(Title, "Not a title: a definition list item."), // TODO: Should be DefinitionList once implemented
+			tSectionAdornment2, tSpace2, item(Title, "Not a title: a definition list item."), // TODO: Should be DefinitionList
 			item(SectionAdornment, "--"), tSpace2, item(Paragraph, "Another definition list item.  It's in a different list,"),
 			tSpace2, item(Paragraph, "but that's an acceptable limitation given that this will"),
 			tSpace2, item(Paragraph, "probably never happen in real life."), tBlankLine,
@@ -1158,10 +1161,9 @@ ABC`,
 
     Over & underline too short.`,
 		[]Token{
-			item(Paragraph, "Paragraph"), tBlankLine, tSpace4, tSectionAdornment2,
+			item(Paragraph, "Paragraph"), tBlankLine, tBlockQuote4, tSectionAdornment2,
 			tSpace4, item(Title, "ABC"), tSpace4, tSectionAdornment2, tBlankLine, tSpace4,
-			item(Paragraph, "Over & underline too short."), // TODO: Should be BlockQuote once implemented
-			tEOF,
+			item(Paragraph, "Over & underline too short."), tEOF,
 		},
 	},
 	{
@@ -1173,10 +1175,9 @@ ABC`,
 
     Underline too short.`,
 		[]Token{
-			item(Paragraph, "Paragraph"), tBlankLine, tSpace4, item(Title, "ABC"),
+			item(Paragraph, "Paragraph"), tBlankLine, tBlockQuote4, item(Title, "ABC"),
 			tSpace4, tSectionAdornment2, tBlankLine, tSpace4,
-			item(Paragraph, "Underline too short."), // TODO: Should be BlockQuote once implemented
-			tEOF,
+			item(Paragraph, "Underline too short."), tEOF,
 		},
 	},
 	{
@@ -1526,8 +1527,8 @@ iiii. iiii
 			item(Enum, "i."), tSpace, item(Paragraph, "i"), tBlankLine,
 			item(Enum, "ii."), tSpace, item(Paragraph, "ii"), tBlankLine,
 			item(Enum, "iii."), tSpace, item(Paragraph, "iii"), tBlankLine,
-			item(Paragraph, "iiii. iiii"), // TODO: Should be DefinitionList once implemented
-			item(Space, "      "), item(Paragraph, "second line"), tBlankLine,
+			item(Paragraph, "iiii. iiii"), // TODO: Should be DefinitionList
+			tBlockQuote6, item(Paragraph, "second line"), tBlankLine,
 			item(Paragraph, "(LCD) is an acronym made up of Roman numerals"), tBlankLine,
 			item(Paragraph, "(livid) is a word made up of Roman numerals"), tBlankLine,
 			item(Paragraph, "(CIVIL) is another such word"), tBlankLine,
@@ -1851,6 +1852,259 @@ No item content:
 			item(Paragraph, "No item content:"), tBlankLine, item(Enum, "1."), tEOF,
 		},
 	},
+	// block quotes
+	{
+		"block quote",
+		`Line 1.
+Line 2.
+
+   Indented.`,
+		[]Token{
+			item(Paragraph, "Line 1."), item(Paragraph, "Line 2."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Indented."), tEOF,
+		},
+	},
+	{
+		"2 block quotes",
+		`Line 1.
+Line 2.
+
+   Indented 1.
+
+      Indented 2.`,
+		[]Token{
+			item(Paragraph, "Line 1."), item(Paragraph, "Line 2."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Indented 1."), tBlankLine,
+			tBlockQuote6, item(Paragraph, "Indented 2."), tEOF,
+		},
+	},
+	{
+		"no blank line before block quote",
+		`Line 1.
+Line 2.
+    Unexpectedly indented.`,
+		[]Token{
+			item(Paragraph, "Line 1."), item(Paragraph, "Line 2."),
+			tBlockQuote4, item(Paragraph, "Unexpectedly indented."), tEOF,
+		},
+	},
+	{
+		"no blank line after block quote",
+		`Line 1.
+Line 2.
+
+   Indented.
+no blank line`,
+		[]Token{
+			item(Paragraph, "Line 1."), item(Paragraph, "Line 2."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Indented."),
+			item(Paragraph, "no blank line"), tEOF,
+		},
+	},
+	{
+		"different indentation levels",
+		`Here is a paragraph.
+
+        Indent 8 spaces.
+
+    Indent 4 spaces.
+
+Is this correct? Should it generate a warning?
+Yes, it is correct, no warning necessary.`,
+		[]Token{
+			item(Paragraph, "Here is a paragraph."), tBlankLine,
+			item(BlockQuote, "        "), item(Paragraph, "Indent 8 spaces."), tBlankLine,
+			tBlockQuote4, item(Paragraph, "Indent 4 spaces."), tBlankLine,
+			item(Paragraph, "Is this correct? Should it generate a warning?"),
+			item(Paragraph, "Yes, it is correct, no warning necessary."), tEOF,
+		},
+	},
+	{
+		"attributions",
+		`Paragraph.
+
+   Block quote.
+
+   -- Attribution
+
+Paragraph.
+
+   Block quote.
+
+   -- Attribution`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution"), tBlankLine,
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution"), tEOF,
+		},
+	},
+	{
+		"alternative attributions",
+		`Alternative: true em-dash.
+
+   Block quote.
+
+   — Attribution
+
+Alternative: three hyphens.
+
+   Block quote.
+
+   --- Attribution`,
+		[]Token{
+			item(Paragraph, "Alternative: true em-dash."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Attribution, "— Attribution"), tBlankLine,
+			item(Paragraph, "Alternative: three hyphens."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Attribution, "--- Attribution"), tEOF,
+		},
+	},
+	{
+		"multi-line attributions",
+		`Paragraph.
+
+   Block quote.
+
+   -- Attribution line one
+   and line two
+
+Paragraph.
+
+   Block quote.
+
+   -- Attribution line one
+   and line two
+
+Paragraph.`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution line one"),
+			tSpace3, item(Attribution, "and line two"), tBlankLine,
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution line one"),
+			tSpace3, item(Attribution, "and line two"), tBlankLine,
+			item(Paragraph, "Paragraph."), tEOF,
+		},
+	},
+	{
+		"2 block quotes, attributions",
+		`Paragraph.
+
+   Block quote 1.
+
+   -- Attribution 1
+
+   Block quote 2.
+
+   -- Attribution 2`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote 1."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution 1"), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote 2."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution 2"), tEOF,
+		},
+	},
+	{
+		"block quote, attribution, block quote",
+		`Paragraph.
+
+   Block quote 1.
+
+   -- Attribution 1
+
+   Block quote 2.`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote 1."), tBlankLine,
+			tSpace3, item(Attribution, "-- Attribution 1"), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote 2."), tEOF,
+		},
+	},
+	{
+		"empty comment",
+		`Unindented paragraph.
+
+    Block quote 1.
+
+    -- Attribution 1
+
+    Block quote 2.
+
+..
+
+    Block quote 3.`,
+		[]Token{
+			item(Paragraph, "Unindented paragraph."), tBlankLine,
+			tBlockQuote4, item(Paragraph, "Block quote 1."), tBlankLine,
+			tSpace4, item(Attribution, "-- Attribution 1"), tBlankLine,
+			tBlockQuote4, item(Paragraph, "Block quote 2."), tBlankLine,
+			tComment, tBlankLine, tBlockQuote4, item(Paragraph, "Block quote 3."), tEOF,
+		},
+	},
+	{
+		"invalid attributions",
+		`Paragraph.
+
+   -- Not an attribution
+
+Paragraph.
+
+   Block quote.
+
+   \-- Not an attribution
+
+Paragraph.
+
+   Block quote.
+
+   -- Not an attribution line one
+      and line two
+          and line three`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "-- Not an attribution"), tBlankLine,
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Paragraph, "\\-- Not an attribution"), tBlankLine,
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "Block quote."), tBlankLine,
+			tSpace3, item(Paragraph, "-- Not an attribution line one"), // TODO: Should be DefinitionList
+			item(Space, "      "), item(Paragraph, "and line two"),
+			item(Space, "          "), item(Paragraph, "and line three"), tEOF,
+		},
+	},
+	{
+		"invalid consecutive attribution",
+		`Paragraph.
+
+   -- Not a valid attribution
+
+   Block quote 1.
+
+   --Attribution 1
+
+   --Invalid attribution
+
+   Block quote 2.
+
+   --Attribution 2`,
+		[]Token{
+			item(Paragraph, "Paragraph."), tBlankLine,
+			tBlockQuote3, item(Paragraph, "-- Not a valid attribution"), tBlankLine,
+			tSpace3, item(Paragraph, "Block quote 1."), tBlankLine,
+			tSpace3, item(Attribution, "--Attribution 1"), tBlankLine,
+			tBlockQuote3, item(Paragraph, "--Invalid attribution"), tBlankLine,
+			tSpace3, item(Paragraph, "Block quote 2."), tBlankLine,
+			tSpace3, item(Attribution, "--Attribution 2"), tEOF,
+		},
+	},
 	// transitions
 	{
 		"transition",
@@ -1933,7 +2187,7 @@ may not end with a transition.
     Paragraph.`,
 		[]Token{
 			item(Paragraph, "Test unexpected transition markers."), tBlankLine,
-			tSpace4, item(Paragraph, "Block quote."), tBlankLine,
+			tBlockQuote4, item(Paragraph, "Block quote."), tBlankLine,
 			tSpace4, tTransitionDash8, tBlankLine,
 			tSpace4, item(Paragraph, "Paragraph."), tEOF,
 		},
