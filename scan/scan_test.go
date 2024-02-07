@@ -2366,8 +2366,7 @@ func equal(i1, i2 []Token, checkPos bool) bool {
 }
 
 func TestScan(t *testing.T) {
-	for _, scanTest := range scanTests {
-		test := scanTest
+	for _, test := range scanTests {
 		items := collect(&test)
 		if !equal(items, test.items, false) {
 			t.Fatalf("%s: got\n\t%+v\nexpected\n\t%v", test.name, items, test.items)

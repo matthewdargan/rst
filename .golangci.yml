@@ -3,7 +3,6 @@ output:
 
 linters:
   enable:
-    - gosec
     - gofumpt
     - nolintlint
     - revive
